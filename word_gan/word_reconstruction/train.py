@@ -51,7 +51,9 @@ if __name__ == '__main__':
     else:
         data_path = sys.argv[1]
 
-    reader = DictDatasetReader(limit_words=10_000)
+    num_words = int(os.getenv("NUM_WORDS", 10_000))
+
+    reader = DictDatasetReader(limit_words=num_words)
     train_dataset = reader.read(data_path)
 
     vocab = Vocabulary.from_instances(train_dataset)
