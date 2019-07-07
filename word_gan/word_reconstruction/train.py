@@ -20,15 +20,15 @@ from word_gan.settings import DATA_DIR
 from word_gan.word_reconstruction.dataset import DictDatasetReader
 
 EMBEDDING_DIM = 300
-EMBEDDING_PATH = os.path.join(DATA_DIR, 'model_small.txt')
+DEFAULT_EMBEDDING_PATH = os.path.join(DATA_DIR, 'model_small.txt')
 
 
-def get_new_model(vocab):
-    weights = _read_pretrained_embeddings_file(EMBEDDING_PATH, EMBEDDING_DIM, vocab)
+def get_new_model(vocab, embedding_path):
+    weights = _read_pretrained_embeddings_file(embedding_path, EMBEDDING_DIM, vocab)
 
     token_embedding = ThriftyEmbedding(
         trainable=False,
-        weights_file=EMBEDDING_PATH,
+        weights_file=embedding_path,
         num_embeddings=vocab.get_vocab_size('tokens'),
         weight=weights,
         embedding_dim=EMBEDDING_DIM,
@@ -53,12 +53,14 @@ if __name__ == '__main__':
 
     num_words = int(os.getenv("NUM_WORDS", 10_000))
 
+    EMBEDDING_PATH = os.getenv('EMBEDDING_PATH', DEFAULT_EMBEDDING_PATH)
+
     reader = DictDatasetReader(limit_words=num_words)
     train_dataset = reader.read(data_path)
 
     vocab = Vocabulary.from_instances(train_dataset)
 
-    model = get_new_model(vocab)
+    model = get_new_model(vocab, EMBEDDING_PATH)
 
     if torch.cuda.is_available():
         cuda_device = 0
