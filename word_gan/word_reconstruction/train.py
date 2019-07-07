@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     BATCH_SIZE = int(os.getenv("BATCH_SIZE", 64))
 
-    NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 10))
+    NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 200))
 
     reader = DictDatasetReader(limit_words=num_words)
     train_dataset = reader.read(data_path)

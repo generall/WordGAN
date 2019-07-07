@@ -19,8 +19,10 @@ class WordReconstruction(Model):
 
         self.loss = torch.nn.NLLLoss()
 
+        self.accuracy = CategoricalAccuracy()
+
         self.metrics: Dict[str, Metric] = {
-            'accuracy': CategoricalAccuracy()
+            'accuracy': self.accuracy
         }
 
     def forward(self, word):
@@ -36,6 +38,7 @@ class WordReconstruction(Model):
 
         if self.training:
             target = word['tokens'].view(-1)
+            self.accuracy(word_probs, target)
             result['loss'] = self.loss(word_probs, target)
 
         return result
