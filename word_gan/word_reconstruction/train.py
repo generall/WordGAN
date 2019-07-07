@@ -83,7 +83,6 @@ if __name__ == '__main__':
         iterator=iterator,
         train_dataset=train_dataset,
         validation_dataset=train_dataset,
-        patience=10,
         num_epochs=NUM_EPOCHS,
         cuda_device=cuda_device,
         serialization_dir=os.path.join(DATA_DIR, 'serialization')
