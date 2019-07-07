@@ -14,7 +14,7 @@ class EmbeddingToWord(nn.Module):
         self.words_count = words_count
 
         self.weights = nn.Linear(embedding_size, words_count)
-        self.softmax = nn.LogSoftmax()
+        self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, embeddings):
         """
