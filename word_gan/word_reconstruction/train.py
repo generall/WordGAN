@@ -55,6 +55,10 @@ if __name__ == '__main__':
 
     EMBEDDING_PATH = os.getenv('EMBEDDING_PATH', DEFAULT_EMBEDDING_PATH)
 
+    BATCH_SIZE = int(os.getenv("BATCH_SIZE", 64))
+
+    NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 10))
+
     reader = DictDatasetReader(limit_words=num_words)
     train_dataset = reader.read(data_path)
 
@@ -70,7 +74,7 @@ if __name__ == '__main__':
 
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    iterator = BasicIterator(batch_size=64)
+    iterator = BasicIterator(batch_size=BATCH_SIZE)
     iterator.index_with(vocab)
 
     trainer = Trainer(
@@ -80,7 +84,7 @@ if __name__ == '__main__':
         train_dataset=train_dataset,
         validation_dataset=train_dataset,
         patience=10,
-        num_epochs=100,
+        num_epochs=NUM_EPOCHS,
         cuda_device=cuda_device,
         serialization_dir=os.path.join(DATA_DIR, 'serialization')
     )
