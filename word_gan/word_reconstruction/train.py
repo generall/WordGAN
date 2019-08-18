@@ -77,6 +77,8 @@ if __name__ == '__main__':
     iterator = BasicIterator(batch_size=BATCH_SIZE)
     iterator.index_with(vocab)
 
+    vocab.save_to_files(os.path.join(DATA_DIR, 'vocab'))
+
     trainer = Trainer(
         model=model,
         optimizer=optimizer,

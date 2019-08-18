@@ -25,24 +25,23 @@ class WordReconstruction(Model):
             'accuracy': self.accuracy
         }
 
-    def forward(self, word):
-
-        # size: [batch_size x embedding_dim]
+    def forward(self, word, target=None):
+        # shape: [batch_size, embedding_dim]
         word_embeddings = self.w2v(word).squeeze(1)
 
+        # shape: [batch_size, vocab_size]
         word_probs = self.v2w(word_embeddings)
 
         result = {
             'words': word_probs
         }
 
-        if self.training:
-            target = word['tokens'].view(-1)
-            self.accuracy(word_probs, target)
-            result['loss'] = self.loss(word_probs, target)
+        if target:
+            target_tokens = target['tokens'].view(-1)
+            self.accuracy(word_probs, target_tokens)
+            result['loss'] = self.loss(word_probs, target_tokens)
 
         return result
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return dict((key, metric.get_metric(reset)) for key, metric in self.metrics.items())
-

@@ -18,7 +18,7 @@ class DictDatasetReader(DatasetReader):
 
     def text_to_instance(self, token: str) -> Instance:
         word_field = TextField([Token(token)], self.token_indexers)
-        fields = {"word": word_field}
+        fields = {"word": word_field, "target": word_field}
         return Instance(fields)
 
     def _read(self, file_path: str) -> Iterable[Instance]:
