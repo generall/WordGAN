@@ -1,66 +1,47 @@
 from typing import Dict
 
 import torch
+from torch import nn
 from allennlp.data import Vocabulary
 from allennlp.models import Model
-from allennlp.modules import FeedForward
-from allennlp.nn import Activation
-from torch import nn
 
-from word_gan.model.embedding_to_word import EmbeddingToWord
-from word_gan.model.multilayer_cnn import MultilayerCnnEncoder
+from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
 class Discriminator(Model):
+    context_size = 2
 
-    def __init__(self, embedding_dim, vocab: Vocabulary):
+    def __init__(self, synonym_discriminator: SynonymDiscriminator, vocab: Vocabulary):
         super().__init__(vocab)
 
-        self.embedding_dim = embedding_dim
-        self.encoder = MultilayerCnnEncoder(
-            embedding_dim=self.embedding_dim,
-            num_filters=self.embedding_dim,
-            layers=2,
-            ngram_filter_sizes=(2, 3),
-            output_dim=self.embedding_dim
-        )
-
-        self.ff = FeedForward(
-            input_dim=self.embedding_dim * 2,
-            num_layers=2,
-            hidden_dims=[self.embedding_dim, 1],
-            activations=[Activation.by_name('relu')(),
-                         Activation.by_name('linear')()],
-            dropout=[0.2, 0]
-        )
-
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.synonym_discriminator = synonym_discriminator
+        self.loss = nn.BCEWithLogitsLoss()
 
     def forward(self, left_context, word, right_context, labels=None) -> Dict[str, torch.Tensor]:
         """
 
-        :param left_context: [batch_size, context_size, embedding_size]
-        :param word: vector of the word of interest [batch_size, embedding_size]
-        :param right_context: [batch_size, context_size, embedding_size]
-        :param labels: if the `word` is original or not. Shape: [batch_size]
+        :param left_context: TextField
+        :param word: TextField
+        :param right_context: TextField
+        :param labels:
         :return:
         """
 
-        # shape: [batch_size, sent_length, embedding_size]
-        sentence_tensor = torch.cat([
-            left_context,
-            word.unsqueeze(1),
-            right_context
-        ], dim=1)
+        # shape: [batch_size, context_size, embedding_size]
+        left_context_vectors = self.w2v(left_context)
+        right_context_vectors = self.w2v(right_context)
 
-        # shape: [batch_size, embedding_size]
-        encoded_sentence = self.encoder(sentence_tensor)
+        # shape: [batch_size, embedding_dim]
+        word_vectors = self.w2v(word).squeeze(1)
 
-        # shape: [batch_size, embedding_size * 2]
-        ff_input = torch.cat([encoded_sentence, word], dim=1)
+        discriminator_left_context = left_context_vectors[:, -self.context_size:, :]
+        discriminator_right_context = right_context_vectors[:, :self.context_size, :]
 
-        # shape: [batch_size]
-        result_scores = self.ff(ff_input).squeeze()
+        result_scores = self.synonym_discriminator(
+            discriminator_left_context,
+            word_vectors,
+            discriminator_right_context
+        )
 
         result = {}
 
@@ -70,8 +51,3 @@ class Discriminator(Model):
             result['scores'] = torch.sigmoid(result_scores)
 
         return result
-
-
-
-
-

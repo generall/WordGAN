@@ -2,12 +2,12 @@ from unittest import TestCase
 
 import torch
 
-from word_gan.model.discriminator import Discriminator
+from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
 class TestDiscriminator(TestCase):
     def test_forward(self):
-        descriminator = Discriminator(10, vocab=None)
+        descriminator = SynonymDiscriminator(10, vocab=None)
 
         batch_size = 5
 

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import torch
 
-from word_gan.model.discriminator import Discriminator
+from word_gan.model.synonym_discriminator import SynonymDiscriminator
 from word_gan.model.synonyms_generator import SynonymGenerator
 
 
