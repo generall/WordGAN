@@ -1,4 +1,5 @@
-torch==1.1.0
-gensim
-allennlp
+gensim==3.8.0
+allennlp==0.8.5
 nltk
+
+torch==1.2.0

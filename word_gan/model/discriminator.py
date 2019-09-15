@@ -17,12 +17,18 @@ class Discriminator(Model):
         self.synonym_discriminator = synonym_discriminator
         self.loss = nn.BCEWithLogitsLoss()
 
-    def forward(self, left_context, word, right_context, labels=None) -> Dict[str, torch.Tensor]:
+    def forward(
+            self,
+            left_context: Dict[str, torch.LongTensor],
+            word: Dict[str, torch.LongTensor],
+            right_context: Dict[str, torch.LongTensor],
+            labels=None
+    ) -> Dict[str, torch.Tensor]:
         """
 
-        :param left_context: TextField
-        :param word: TextField
-        :param right_context: TextField
+        :param left_context:  Dict[str, torch.LongTensor]
+        :param word:  Dict[str, torch.LongTensor]
+        :param right_context:  Dict[str, torch.LongTensor]
         :param labels:
         :return:
         """

@@ -20,7 +20,8 @@ class Generator(Model):
             embedding_dim,
             w2v: TextFieldEmbedder,
             v2w: EmbeddingToWord,
-            vocab: Vocabulary
+            vocab: Vocabulary,
+            synonym_delta: float = 0.1
     ):
         """
 
@@ -30,6 +31,7 @@ class Generator(Model):
         """
         super().__init__(vocab)
 
+        self.synonym_delta = synonym_delta
         self.w2v = w2v
         self.v2w = v2w
         self.synonyms_generator = SynonymGenerator(embedding_dim)
@@ -41,15 +43,15 @@ class Generator(Model):
 
     def forward(
             self,
-            left_context,
-            word,
-            right_context,
+            left_context:  Dict[str, torch.LongTensor],
+            word:  Dict[str, torch.LongTensor],
+            right_context:  Dict[str, torch.LongTensor],
             discriminator: SynonymDiscriminator = None
     ) -> Dict[str, torch.Tensor]:
         """
-        :param left_context: TextField
-        :param word: TextField
-        :param right_context: TextField
+        :param left_context: Dict[str, torch.LongTensor],
+        :param word: Dict[str, torch.LongTensor],
+        :param right_context: Dict[str, torch.LongTensor],
         :param discriminator:
         :return:
         """
@@ -84,13 +86,35 @@ class Generator(Model):
                 discriminator_right_context
             )
 
+            # [batch_size, 1]
+            target_indexes = word['target'].unsqueeze(1)
+
+            # shape: [batch_size, vocab_size]
+            delta_probs = torch.zeros_like(synonym_words_score).scatter_(1, target_indexes, self.synonym_delta)
+
+            # shape: [batch_size, vocab_size]
+            adjusted_synonym_words_score = synonym_words_score + delta_probs
+
+            # shape: [batch_size], [batch_size]
+            max_synonym_scores, synonym_words_ids = torch.max(adjusted_synonym_words_score, dim=1)
+
+            # shape: [batch_size]
+            loss_mask = word['target'] == synonym_words_ids
+
+            # shape: [wrond_synonym_batch]
+            wrong_synonyms_scores = max_synonym_scores[~loss_mask]
+
+            # shape: [true_synonym_batch, vocab_size]
+            discriminator_predictions = discriminator_predictions[loss_mask]
+
             # We want to trick discriminator here
             required_predictions = torch.ones_like(discriminator_predictions)
 
-            result['loss'] = self.loss(discriminator_predictions, required_predictions)  # ToDo new word loss
+            guess_loss = self.loss(discriminator_predictions, required_predictions)
 
-            # ToDo: Get original word ids in terms of small dictionary
-            # ToDo: Add indexer for TextField with small dictionary
+            # If generated synonym is same as initial word - the loss is this synonym probability
+            # If not - loss is obtained from ability to trick discriminator
+            result['loss'] = guess_loss + torch.sum(wrong_synonyms_scores)
 
         return result
 
