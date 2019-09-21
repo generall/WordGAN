@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 import torch
 from allennlp.data import Vocabulary
@@ -41,11 +41,49 @@ class Generator(Model):
 
         self.loss = nn.BCEWithLogitsLoss()
 
+    @classmethod
+    def _adjust_scored(cls, scores, indexes, value):
+        # shape: [batch_size, vocab_size]
+        delta_value = torch.zeros_like(scores).scatter_(
+            dim=1,
+            index=indexes.unsqueeze(1),
+            value=value
+        )
+
+        # shape: [batch_size, vocab_size]
+        adjusted_scores = scores + delta_value
+
+        return adjusted_scores
+
+    def _get_loss_mask(self, target_indexes, synonym_words_score) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+
+        :param target_indexes: [batch_size]
+        :param synonym_words_score: [batch_size, vocab_size]
+        :return:
+            `loss_mask` mask for each word in batch.
+                0 - if synonym is correctly generated
+                1 - if synonym is same as target word
+            `max_synonym_scores` score of the most probable synonym for each batch
+
+        """
+
+        # shape: [batch_size, vocab_size]
+        adjusted_synonym_words_score = self._adjust_scored(synonym_words_score, target_indexes, self.synonym_delta)
+
+        # shape: [batch_size], [batch_size]
+        max_synonym_scores, synonym_words_ids = torch.max(adjusted_synonym_words_score, dim=1)
+
+        # shape: [batch_size]
+        loss_mask = target_indexes == synonym_words_ids
+
+        return loss_mask, max_synonym_scores
+
     def forward(
             self,
-            left_context:  Dict[str, torch.LongTensor],
-            word:  Dict[str, torch.LongTensor],
-            right_context:  Dict[str, torch.LongTensor],
+            left_context: Dict[str, torch.LongTensor],
+            word: Dict[str, torch.LongTensor],
+            right_context: Dict[str, torch.LongTensor],
             discriminator: SynonymDiscriminator = None
     ) -> Dict[str, torch.Tensor]:
         """
@@ -72,8 +110,12 @@ class Generator(Model):
         # shape: [batch_size, vocab_size]
         synonym_words_score = self.v2w(synonym_vectors)
 
+        # [batch_size]
+        target_indexes = word['target']
+
         result = {
-            'synonym_words_score': synonym_words_score
+            'output_scores': synonym_words_score,
+            'output_indexes': torch.argmax(self._adjust_scored(synonym_words_score, target_indexes, -1), dim=1)
         }
 
         if discriminator:
@@ -86,26 +128,14 @@ class Generator(Model):
                 discriminator_right_context
             )
 
-            # [batch_size, 1]
-            target_indexes = word['target'].unsqueeze(1)
-
-            # shape: [batch_size, vocab_size]
-            delta_probs = torch.zeros_like(synonym_words_score).scatter_(1, target_indexes, self.synonym_delta)
-
-            # shape: [batch_size, vocab_size]
-            adjusted_synonym_words_score = synonym_words_score + delta_probs
-
             # shape: [batch_size], [batch_size]
-            max_synonym_scores, synonym_words_ids = torch.max(adjusted_synonym_words_score, dim=1)
+            loss_mask, max_synonym_scores = self._get_loss_mask(target_indexes, synonym_words_score)
 
-            # shape: [batch_size]
-            loss_mask = word['target'] == synonym_words_ids
-
-            # shape: [wrond_synonym_batch]
-            wrong_synonyms_scores = max_synonym_scores[~loss_mask]
+            # shape: [wrong_synonym_batch]
+            wrong_synonyms_scores = max_synonym_scores[loss_mask]
 
             # shape: [true_synonym_batch, vocab_size]
-            discriminator_predictions = discriminator_predictions[loss_mask]
+            discriminator_predictions = discriminator_predictions[~loss_mask]
 
             # We want to trick discriminator here
             required_predictions = torch.ones_like(discriminator_predictions)
@@ -117,4 +147,3 @@ class Generator(Model):
             result['loss'] = guess_loss + torch.sum(wrong_synonyms_scores)
 
         return result
-
