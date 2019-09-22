@@ -1,6 +1,7 @@
 from typing import Dict
 
 import torch
+from allennlp.modules import TextFieldEmbedder
 from torch import nn
 from allennlp.data import Vocabulary
 from allennlp.models import Model
@@ -11,9 +12,13 @@ from word_gan.model.synonym_discriminator import SynonymDiscriminator
 class Discriminator(Model):
     context_size = 2
 
-    def __init__(self, synonym_discriminator: SynonymDiscriminator, vocab: Vocabulary):
+    def __init__(self,
+                 w2v: TextFieldEmbedder,
+                 synonym_discriminator: SynonymDiscriminator,
+                 vocab: Vocabulary):
         super().__init__(vocab)
 
+        self.w2v = w2v
         self.synonym_discriminator = synonym_discriminator
         self.loss = nn.BCEWithLogitsLoss()
 

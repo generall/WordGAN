@@ -1,8 +1,9 @@
 import os
 import sys
-from typing import Union, List, Dict, Any, Iterable
+from typing import Union, List, Dict, Any, Iterable, Optional
 
 import torch
+import tqdm
 from allennlp.data import Vocabulary, DataIterator, Instance
 from allennlp.data.iterators import BucketIterator, BasicIterator
 from allennlp.models import Model
@@ -10,6 +11,7 @@ from allennlp.training import TrainerBase
 from torch.optim.optimizer import Optimizer
 
 from word_gan.gan.dataset import TextDatasetReader
+from word_gan.gan.train_logger import TrainLogger
 from word_gan.model.discriminator import Discriminator
 from word_gan.model.generator import Generator
 from word_gan.settings import DATA_DIR, SETTINGS
@@ -47,7 +49,8 @@ class GanTrainer(TrainerBase):
                  batch_iterator: DataIterator,
                  cuda_device: Union[int, List] = -1,
                  max_batches: int = 100,
-                 num_epochs: int = 10
+                 num_epochs: int = 10,
+                 train_logger: Optional[TrainLogger] = None
                  ) -> None:
         """
 
@@ -58,6 +61,7 @@ class GanTrainer(TrainerBase):
         """
         super().__init__(serialization_dir, cuda_device)
 
+        self.train_logger = train_logger
         self.discriminator_optimizer = discriminator_optimizer
         self.generator_optimizer = generator_optimizer
 
@@ -123,6 +127,10 @@ class GanTrainer(TrainerBase):
                 generator_loss += fake_error.sum().item()
 
                 self.generator_optimizer.step()
+
+                if self.train_logger:
+                    self.train_logger.log_generator(batch, generated)
+
                 generator_quota -= 1
 
             else:
@@ -136,7 +144,14 @@ class GanTrainer(TrainerBase):
         }
 
     def train(self) -> Dict[str, Any]:
-        pass  # ToDo
+        with tqdm.trange(self.num_epochs) as epochs:
+            for _ in epochs:
+                metrics = self.train_one_epoch()
+                description = (f'gl: {metrics["generator_loss"]:.3f} '
+                               f'dfl: {metrics["discriminator_fake_loss"]:.3f} '
+                               f'drl: {metrics["discriminator_real_loss"]:.3f} ')
+                epochs.set_description(description)
+        return metrics
 
 
 if __name__ == '__main__':
@@ -156,9 +171,7 @@ if __name__ == '__main__':
     reader = TextDatasetReader(
         dict_path=freq_dict_path,
         limit_words=100_000,
-        limit_freq=0,
-        small_context=1,
-        large_context=2
+        limit_freq=0
     )
 
     train_dataset = reader.read(text_data_path)

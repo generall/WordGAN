@@ -27,19 +27,17 @@ class TextDatasetReader(DatasetReader):
 
         return word_dict
 
-    def __init__(self, dict_path, limit_words=-1, limit_freq=0, small_context=1, large_context=2,
+    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 2,
                  token_indexers: Dict[str, TokenIndexer] = None):
         """
 
         :param dict_path: path to the dict of acceptable fords to change
         :param limit_words: Max word count from dictionary
         :param limit_freq: Minimum frequency of words
-        :param small_context:
-        :param large_context:
+        :param max_context_size:
         """
         super().__init__(lazy=True)
-        self.large_context_size = large_context
-        self.small_context_size = small_context
+        self.max_context_size = max_context_size
         self.word_dict = self.read_dict(dict_path, limit_words, limit_freq)
 
         self.tokenizer = WordPunctTokenizer()
@@ -56,33 +54,22 @@ class TextDatasetReader(DatasetReader):
     def text_to_instance(self, tokens, idx) -> Instance:
         target_word = tokens[idx]
 
-        small_left_context, small_right_context = self.get_context(tokens, idx, self.small_context_size)
-        large_left_context, large_right_context = self.get_context(tokens, idx, self.large_context_size)
+        left_context, right_context = self.get_context(tokens, idx, self.max_context_size)
 
-        if len(small_left_context) < self.small_context_size:
-            small_left_context = [self.left_padding] + small_left_context
-        if len(small_right_context) < self.small_context_size:
-            small_right_context = small_right_context + [self.right_padding]
+        if len(left_context) < self.max_context_size:
+            left_context = [self.left_padding] + left_context
+        if len(right_context) < self.max_context_size:
+            right_context = right_context + [self.right_padding]
 
-        if len(large_left_context) < self.large_context_size:
-            large_left_context = [self.left_padding] + large_left_context
-        if len(large_right_context) < self.large_context_size:
-            large_right_context = large_right_context + [self.right_padding]
-
-        small_context = small_left_context + [target_word] + small_right_context
-
-        small_context_field = TextField(small_context, self.token_indexers)
-
-        large_context = large_left_context + [target_word] + large_right_context
-
-        large_context_field = TextField(large_context, self.token_indexers)
+        left_context = TextField(left_context, self.token_indexers)
+        right_context = TextField(right_context, self.token_indexers)
 
         target_token_field = TextField([target_word], self.target_indexer)
 
         return Instance({
-            "small_context": small_context_field,
-            "large_context": large_context_field,
-            "target_word": target_token_field
+            "left_context": left_context,
+            "right_context": right_context,
+            "word": target_token_field
         })
 
     @classmethod
