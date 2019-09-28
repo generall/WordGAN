@@ -10,11 +10,12 @@ class DictDatasetReader(DatasetReader):
     Reads simple frequency lists in format <word> <freq>
     """
 
-    def __init__(self, limit_words=-1, limit_freq=0, token_indexers: Dict[str, TokenIndexer] = None) -> None:
+    def __init__(self, limit_words=-1, limit_freq=0, token_indexers: Dict[str, TokenIndexer] = None,
+                 namespace='tokens') -> None:
         super().__init__(lazy=False)
         self.limit_freq = limit_freq
         self.limit_words = limit_words
-        self.token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
+        self.token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer(namespace=namespace)}
 
     def text_to_instance(self, token: str) -> Instance:
         word_field = TextField([Token(token)], self.token_indexers)
