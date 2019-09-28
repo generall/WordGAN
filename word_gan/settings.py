@@ -7,8 +7,9 @@ TEST_DATA_DIR = os.path.join(DATA_DIR, 'tests')
 
 
 class BaseSettings:
-    TOKEN_VOCAB_PATH = os.path.join(DATA_DIR, 'tokens_vocab.txt')  # All tokens, present in Word2Vec
-    TARGET_VOCAB_PATH = os.path.join(DATA_DIR, 'target_vocab.txt')  # Changeable words
+    # tokens: All tokens, present in Word2Vec.
+    # target: Changeable words
+    VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
 
 
 SETTINGS = BaseSettings

@@ -19,24 +19,6 @@ from word_gan.settings import DATA_DIR, SETTINGS
 BATCH_SIZE = 64
 
 
-def load_vocab(target_vocab_path, tokens_vocab_path):
-    vocab = Vocabulary()
-
-    vocab.set_from_file(
-        filename=target_vocab_path,
-        is_padded=False,
-        namespace='target'
-    )
-
-    vocab.set_from_file(
-        filename=tokens_vocab_path,
-        is_padded=True,
-        namespace='tokens'
-    )
-
-    return vocab
-
-
 class GanTrainer(TrainerBase):
 
     def __init__(self,
@@ -163,14 +145,14 @@ if __name__ == '__main__':
     else:
         text_data_path = os.path.join(DATA_DIR, 'test_data.txt')
 
-    vocab = load_vocab(SETTINGS.TARGET_VOCAB_PATH, SETTINGS.TOKEN_VOCAB_PATH)
+    vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
     print('target size', vocab.get_vocab_size('target'))
     print('tokens size', vocab.get_vocab_size('tokens'))
 
     reader = TextDatasetReader(
         dict_path=freq_dict_path,
-        limit_words=100_000,
+        limit_words=vocab.get_vocab_size('target'),
         limit_freq=0
     )
 

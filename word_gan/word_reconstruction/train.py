@@ -17,26 +17,20 @@ EMBEDDING_DIM = 300
 DEFAULT_EMBEDDING_PATH = os.path.join(TEST_DATA_DIR, 'model_small.txt')
 OUT_MODEL_PATH = os.getenv("OUT_MODEL_PATH", os.path.join(TEST_DATA_DIR, 'test_v2w_model.th'))
 NAMESPACE = 'target'
+OUT_VOCAB_PATH = os.getenv("OUT_VOCAB_PATH", os.path.join(TEST_DATA_DIR, 'vocab'))
+NUM_WORDS = int(os.getenv("NUM_WORDS", 10_000))
+EMBEDDING_PATH = os.getenv('EMBEDDING_PATH', DEFAULT_EMBEDDING_PATH)
+INIT_VOCAB_PATH = os.getenv('INIT_VOCAB_PATH', os.path.join(DATA_DIR, 'count_1w.txt'))
 
 if __name__ == '__main__':
-
     logging.basicConfig(level=logging.INFO)
 
-    if len(sys.argv) < 2:
-        data_path = os.path.join(DATA_DIR, 'count_1w.txt')
-    else:
-        data_path = sys.argv[1]
-
-    num_words = int(os.getenv("NUM_WORDS", 10_000))
-
-    EMBEDDING_PATH = os.getenv('EMBEDDING_PATH', DEFAULT_EMBEDDING_PATH)
-
-    reader = DictDatasetReader(limit_words=num_words, namespace=NAMESPACE)
-    train_dataset = reader.read(data_path)
+    reader = DictDatasetReader(limit_words=NUM_WORDS, namespace=NAMESPACE)
+    train_dataset = reader.read(INIT_VOCAB_PATH)
 
     vocab = Vocabulary.from_instances(train_dataset)
 
-    vocab.save_to_files(os.path.join(TEST_DATA_DIR, 'vocab'))
+    vocab.save_to_files(OUT_VOCAB_PATH)
 
     weights = _read_pretrained_embeddings_file(EMBEDDING_PATH, EMBEDDING_DIM, vocab, namespace=NAMESPACE)
 

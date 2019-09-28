@@ -25,10 +25,12 @@ class DictDatasetReader(DatasetReader):
     def _read(self, file_path: str) -> Iterable[Instance]:
         with open(file_path) as fd:
             for idx, line in enumerate(fd):
-                word, freq = line.strip().split()
-                freq = int(freq)
-                if idx == self.limit_words:
-                    break
-                if freq < self.limit_freq:
-                    break
+                word, *freq = line.strip().split()
+                if len(freq) > 0:
+                    freq = freq[0]
+                    freq = int(freq)
+                    if idx == self.limit_words:
+                        break
+                    if freq < self.limit_freq:
+                        break
                 yield self.text_to_instance(word)
