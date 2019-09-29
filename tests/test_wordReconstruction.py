@@ -6,11 +6,13 @@ import torch
 from allennlp.data import Vocabulary
 
 from word_gan.model.embedding_to_word import EmbeddingToWord
-from word_gan.settings import DATA_DIR, TEST_DATA_DIR
 
 
 class TestWordReconstruction(TestCase):
     def test_word_reconstruction(self):
+        os.environ['MODE'] = 'test'
+        from word_gan.settings import SETTINGS
+
         vect_pickup = torch.tensor([list(map(
             float,
             '0.566424 -0.565591 0.517313 0.037623 0.586895 0.044779 -0.720138 -0.537858 0.250331 -0.423935 -0.157338 '
@@ -43,14 +45,15 @@ class TestWordReconstruction(TestCase):
             '0.048929 -0.157931 0.087857 -0.231842 0.089160 -0.126510 0.235636 0.016760'.split()))])
 
         namespace = 'target'
-        vocab = Vocabulary.from_files(os.path.join(TEST_DATA_DIR, 'vocab'))
+        vocab = Vocabulary.from_files(os.path.join(SETTINGS.DATA_DIR, 'vocab'))
 
         print('vocab size:', vocab.get_vocab_size(namespace=namespace))
 
-        weights_file = os.path.join(TEST_DATA_DIR, 'test_v2w_model.th')
+        weights_file = os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th')
         model_state = torch.load(weights_file, map_location=torch.device('cpu'))
 
-        model: torch.nn.Module = EmbeddingToWord(embedding_size=300, words_count=vocab.get_vocab_size(namespace))
+        model: torch.nn.Module = EmbeddingToWord(embedding_size=SETTINGS.EMBEDDINGS_SIZE,
+                                                 words_count=vocab.get_vocab_size(namespace))
 
         model.load_state_dict(model_state)
 

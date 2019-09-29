@@ -1,12 +1,12 @@
 from unittest import TestCase
 import torch
+from allennlp.data import Vocabulary
 
 from word_gan.model.generator import Generator
 
 
 class TestGenerator(TestCase):
     def test__get_loss_mask(self):
-        generator = Generator(10, None, None, None)
 
         torch.set_printoptions(precision=2)
 
@@ -26,9 +26,10 @@ class TestGenerator(TestCase):
 
         print("")
 
-        loss_mask, max_scores = generator._get_loss_mask(
+        loss_mask, max_scores = Generator._get_loss_mask(
             target_indexes=target_indexes,
-            synonym_words_score=synonym_words_score
+            synonym_words_score=synonym_words_score,
+            synonym_delta=0.1
         )
 
         self.assertEqual(loss_mask.shape[0], 5)
@@ -43,3 +44,31 @@ class TestGenerator(TestCase):
         print(loss_mask)
         print(max_scores)
 
+    def test_build_vocab_mapping(self):
+
+        vocab = Vocabulary({
+            'target': {
+                'aaa': 1,
+                'bbb': 1,
+                'ccc': 1,
+                'ddd': 1,
+                'eee': 1,
+            },
+            'tokens': {
+                '111': 1,
+                'aaa': 1,
+                '222': 1,
+                'bbb': 1,
+                'ccc': 1,
+                '333': 1,
+                'ddd': 1,
+                'eee': 1,
+            }
+        })
+
+        mapping = Generator._build_mapping(vocab, 'target', 'tokens')
+
+        print(mapping)
+
+        self.assertEqual(mapping[vocab.get_token_index('ccc', 'target')], vocab.get_token_index('ccc', 'tokens'))
+        self.assertNotEqual(vocab.get_token_index('ccc', 'target'), vocab.get_token_index('ccc', 'tokens'))

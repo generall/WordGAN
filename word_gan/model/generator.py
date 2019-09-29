@@ -5,6 +5,7 @@ from allennlp.data import Vocabulary
 from allennlp.models import Model
 from allennlp.modules import TextFieldEmbedder
 from torch import nn
+from torch.nn.parameter import Parameter
 
 from word_gan.model.discriminator import Discriminator
 from word_gan.model.synonym_discriminator import SynonymDiscriminator
@@ -38,8 +39,42 @@ class Generator(Model):
 
         self.loss = nn.BCEWithLogitsLoss()
 
+        self.targets_to_tokens = Parameter(
+            self._build_mapping(vocab, src_namespace='target', dist_namespace='tokens'),
+            requires_grad=False
+        )
+
+        self.targets_to_tokens.requires_grad = False
+
     @classmethod
-    def _adjust_scored(cls, scores, indexes, value):
+    def _build_mapping(cls, vocab, src_namespace, dist_namespace):
+        """
+        Build mapping tensor from target indexes to tokens
+        :return:
+        """
+        target_to_tokens = dict(
+            (index, vocab.get_token_index(token=token, namespace=dist_namespace)) for token, index in
+            vocab.get_token_to_index_vocabulary(src_namespace).items()
+        )
+
+        d_array = torch.arange(max(vocab.get_token_to_index_vocabulary(src_namespace).values()) + 1)
+
+        target_indexes = torch.tensor(list(target_to_tokens.keys()))
+        tokens_indexes = torch.tensor(list(target_to_tokens.values()))
+
+        d_array[target_indexes] = tokens_indexes
+
+        return d_array
+
+    @classmethod
+    def _adjust_scored(cls, scores, indexes, value: float):
+        """
+
+        :param scores: shape: [batch_size, vocab_size]
+        :param indexes: [batch_size]
+        :param value: float
+        :return:
+        """
         # shape: [batch_size, vocab_size]
         delta_value = torch.zeros_like(scores).scatter_(
             dim=1,
@@ -52,7 +87,8 @@ class Generator(Model):
 
         return adjusted_scores
 
-    def _get_loss_mask(self, target_indexes, synonym_words_score) -> Tuple[torch.Tensor, torch.Tensor]:
+    @classmethod
+    def _get_loss_mask(cls, target_indexes, synonym_words_score, synonym_delta) -> Tuple[torch.Tensor, torch.Tensor]:
         """
 
         :param target_indexes: [batch_size]
@@ -66,7 +102,7 @@ class Generator(Model):
         """
 
         # shape: [batch_size, vocab_size]
-        adjusted_synonym_words_score = self._adjust_scored(synonym_words_score, target_indexes, self.synonym_delta)
+        adjusted_synonym_words_score = cls._adjust_scored(synonym_words_score, target_indexes, synonym_delta)
 
         # shape: [batch_size], [batch_size]
         max_synonym_scores, synonym_words_ids = torch.max(adjusted_synonym_words_score, dim=1)
@@ -108,17 +144,24 @@ class Generator(Model):
         synonym_words_score = self.v2w(synonym_vectors)
 
         # [batch_size]
-        target_indexes = word['target']
+        target_indexes = word['target'].squeeze()
+
+        target_synonym_indexes = torch.argmax(self._adjust_scored(synonym_words_score, target_indexes, -1), dim=1)
+        tokens_synonym_indexes = self.targets_to_tokens[target_synonym_indexes]
 
         result = {
             'output_scores': synonym_words_score,
-            'output_indexes': torch.argmax(self._adjust_scored(synonym_words_score, target_indexes, -1), dim=1)
+            'output_indexes': {
+                "target": target_indexes,
+                "tokens": tokens_synonym_indexes
+            }
         }
 
         if discriminator:
             discriminator_left_context = left_context_vectors[:, -self.discriminator_context_size:, :]
             discriminator_right_context = right_context_vectors[:, :self.discriminator_context_size, :]
 
+            # ToDo: Fix here
             discriminator_predictions = discriminator(
                 discriminator_left_context,
                 synonym_vectors,
@@ -126,7 +169,7 @@ class Generator(Model):
             )
 
             # shape: [batch_size], [batch_size]
-            loss_mask, max_synonym_scores = self._get_loss_mask(target_indexes, synonym_words_score)
+            loss_mask, max_synonym_scores = self._get_loss_mask(target_indexes, synonym_words_score, self.synonym_delta)
 
             # shape: [wrong_synonym_batch]
             wrong_synonyms_scores = max_synonym_scores[loss_mask]

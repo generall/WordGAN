@@ -26,11 +26,13 @@ class DictDatasetReader(DatasetReader):
         with open(file_path) as fd:
             for idx, line in enumerate(fd):
                 word, *freq = line.strip().split()
+
+                if idx == self.limit_words:
+                    break
+
                 if len(freq) > 0:
                     freq = freq[0]
                     freq = int(freq)
-                    if idx == self.limit_words:
-                        break
                     if freq < self.limit_freq:
                         break
                 yield self.text_to_instance(word)

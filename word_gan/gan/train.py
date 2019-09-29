@@ -7,14 +7,17 @@ from allennlp.data.iterators import BasicIterator
 from allennlp.modules import TextFieldEmbedder
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file
+from loguru import logger
+from torch import optim
 
 from word_gan.gan.dataset import TextDatasetReader
-from word_gan.gan.trainer import BATCH_SIZE
+from word_gan.gan.train_logger import WordGanLogger
+from word_gan.gan.trainer import GanTrainer
 from word_gan.model.discriminator import Discriminator
 from word_gan.model.embedding_to_word import EmbeddingToWord
 from word_gan.model.generator import Generator
 from word_gan.model.thrifty_embeddings import ThriftyEmbedding
-from word_gan.settings import DATA_DIR, SETTINGS
+from word_gan.settings import SETTINGS
 
 
 def load_w2v(
@@ -29,15 +32,20 @@ def load_w2v(
         namespace=namespace
     )
 
+    logger.info(f"W2V size: {weights.shape}")
+
     token_embedding = ThriftyEmbedding(
         trainable=False,
         weights_file=weights_file,
         num_embeddings=vocab.get_vocab_size(namespace),
         weight=weights,
-        embedding_dim=SETTINGS.EMBEDDINGS_SIZE,
+        embedding_dim=SETTINGS.EMBEDDINGS_SIZE
     )
 
-    word_embeddings = BasicTextFieldEmbedder({"tokens": token_embedding})
+    word_embeddings = BasicTextFieldEmbedder(
+        {"tokens": token_embedding},
+        allow_unmatched_keys=True
+    )
 
     return word_embeddings
 
@@ -62,14 +70,14 @@ def load_v2w(
 
 if __name__ == '__main__':
 
-    freq_dict_path = os.path.join(DATA_DIR, 'common.txt')
-    v2w_model_path = os.path.join(DATA_DIR, 'v2w_model.th')
-    w2v_model_path = os.path.join(DATA_DIR, 'model.txt')
+    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
+    v2w_model_path = os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th')
+    w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
 
     if len(sys.argv) > 1:
         text_data_path = sys.argv[1]
     else:
-        text_data_path = os.path.join(DATA_DIR, 'test_data.txt')
+        text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data.txt')
 
     vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
@@ -84,7 +92,7 @@ if __name__ == '__main__':
 
     train_dataset = reader.read(text_data_path)
 
-    iterator = BasicIterator(batch_size=BATCH_SIZE)
+    iterator = BasicIterator(batch_size=SETTINGS.BATCH_SIZE)
 
     iterator.index_with(vocab)
 
@@ -98,13 +106,39 @@ if __name__ == '__main__':
         vocab=vocab,
     )
 
-    generator = Generator(
+    generator: Generator = Generator(
         w2v=w2v_model,
         v2w=v2w_model,
         vocab=vocab
     )
 
-    discriminator = Discriminator(
+    discriminator: Discriminator = Discriminator(
         w2v=w2v_model,
         vocab=vocab
     )
+
+    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
+    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
+
+    if torch.cuda.is_available():
+        cuda_device = 0
+        generator = generator.cuda(cuda_device)
+        discriminator = discriminator.cuda(cuda_device)
+    else:
+        cuda_device = -1
+
+    trainer = GanTrainer(
+        serialization_dir=os.path.join(SETTINGS.DATA_DIR, 'serialization'),
+        data=train_dataset,
+        generator=generator,
+        discriminator=discriminator,
+        generator_optimizer=generator_optimizer,
+        discriminator_optimizer=discriminator_optimizer,
+        batch_iterator=iterator,
+        cuda_device=cuda_device,
+        max_batches=20,
+        num_epochs=2,
+        train_logger=WordGanLogger()
+    )
+
+    trainer.train()

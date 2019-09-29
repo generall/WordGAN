@@ -1,26 +1,18 @@
-import os
-import sys
 from typing import Union, List, Dict, Any, Iterable, Optional
 
+import numpy as np
 import torch
 import tqdm
-from allennlp.data import Vocabulary, DataIterator, Instance
-from allennlp.data.iterators import BucketIterator, BasicIterator
-from allennlp.models import Model
+from allennlp.data import DataIterator, Instance
 from allennlp.training import TrainerBase
 from torch.optim.optimizer import Optimizer
 
-from word_gan.gan.dataset import TextDatasetReader
 from word_gan.gan.train_logger import TrainLogger
 from word_gan.model.discriminator import Discriminator
 from word_gan.model.generator import Generator
-from word_gan.settings import DATA_DIR, SETTINGS
-
-BATCH_SIZE = 64
 
 
 class GanTrainer(TrainerBase):
-
     def __init__(self,
                  serialization_dir: str,
                  data: Iterable[Instance],
@@ -32,7 +24,7 @@ class GanTrainer(TrainerBase):
                  cuda_device: Union[int, List] = -1,
                  max_batches: int = 100,
                  num_epochs: int = 10,
-                 train_logger: Optional[TrainLogger] = None
+                 train_logger: Optional[TrainLogger] = None,
                  ) -> None:
         """
 
@@ -78,7 +70,7 @@ class GanTrainer(TrainerBase):
 
                 # Real example, want discriminator to predict 1.
 
-                real_error = self.discriminator(**batch, label=torch.ones(BATCH_SIZE))["loss"]
+                real_error = self.discriminator(**batch, labels=torch.ones(self.batch_iterator._batch_size))["loss"]
                 real_error.backward()
 
                 # Fake example, want discriminator to predict 0.
@@ -89,7 +81,8 @@ class GanTrainer(TrainerBase):
                     'word': fake_data
                 }
 
-                fake_error = self.discriminator(**fake_batch, label=torch.zeros(BATCH_SIZE))["loss"]
+                fake_error = self.discriminator(**fake_batch,
+                                                labels=torch.zeros(self.batch_iterator._batch_size))["loss"]
                 fake_error.backward()
 
                 discriminator_real_loss += real_error.sum().item()
@@ -134,5 +127,3 @@ class GanTrainer(TrainerBase):
                                f'drl: {metrics["discriminator_real_loss"]:.3f} ')
                 epochs.set_description(description)
         return metrics
-
-

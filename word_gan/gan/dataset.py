@@ -1,6 +1,6 @@
 from typing import Iterable, Dict
 
-from allennlp.data import DatasetReader, Instance, TokenIndexer
+from allennlp.data import DatasetReader, Instance, TokenIndexer, Token
 from allennlp.data.fields import TextField
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from nltk.tokenize import WordPunctTokenizer
@@ -18,11 +18,12 @@ class TextDatasetReader(DatasetReader):
             for idx, line in enumerate(fd):
                 word, *freq = line.strip().split()
 
+                if idx == limit_words:
+                    break
+
                 if len(freq) > 0:
                     freq = freq[0]
                     freq = int(freq)
-                    if idx == limit_words:
-                        break
                     if freq < limit_freq:
                         break
                 else:
@@ -48,10 +49,13 @@ class TextDatasetReader(DatasetReader):
         self.tokenizer = WordPunctTokenizer()
         self.token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
 
-        self.target_indexer = {"target": SingleIdTokenIndexer(
-            namespace='target',
-            lowercase_tokens=True
-        )}
+        self.target_indexer = {
+            "target": SingleIdTokenIndexer(
+                namespace='target',
+                lowercase_tokens=True
+            ),
+            "tokens": SingleIdTokenIndexer()
+        }
 
         self.left_padding = 'BOS'
         self.right_padding = 'EOS'
@@ -66,10 +70,10 @@ class TextDatasetReader(DatasetReader):
         if len(right_context) < self.max_context_size:
             right_context = right_context + [self.right_padding]
 
-        left_context = TextField(left_context, self.token_indexers)
-        right_context = TextField(right_context, self.token_indexers)
+        left_context = TextField([Token(token) for token in left_context], self.token_indexers)
+        right_context = TextField([Token(token) for token in right_context], self.token_indexers)
 
-        target_token_field = TextField([target_word], self.target_indexer)
+        target_token_field = TextField([Token(target_word)], self.target_indexer)
 
         return Instance({
             "left_context": left_context,

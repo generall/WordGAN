@@ -69,7 +69,8 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
         for layer_num in range(self._layers):
             layer_cnns = [Conv1d(in_channels=self._embedding_dim if layer_num == 0 else self._num_filters,
                                  out_channels=self._num_filters,
-                                 kernel_size=ngram_size)
+                                 kernel_size=ngram_size,
+                                 padding=1)
                           for ngram_size in self._ngram_filter_sizes]
 
             self._convolution_layers.append(layer_cnns)

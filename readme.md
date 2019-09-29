@@ -35,10 +35,7 @@ comm -12 \
 
 ```bash
 NUM_WORDS=100000 \
-INIT_VOCAB_PATH='./data/common.txt' \
-EMBEDDING_PATH='./data/model.txt' \
-OUT_MODEL_PATH='./data/v2w_model.th' \
-OUT_VOCAB_PATH='./data/vocab' \
+MODE='prod' \
 python -m word_gan.word_reconstruction.train
 ```
 
