@@ -16,12 +16,17 @@ class TextDatasetReader(DatasetReader):
         word_dict = {}
         with open(file_path) as fd:
             for idx, line in enumerate(fd):
-                word, freq = line.strip().split()
-                freq = int(freq)
-                if idx == limit_words:
-                    break
-                if freq < limit_freq:
-                    break
+                word, *freq = line.strip().split()
+
+                if len(freq) > 0:
+                    freq = freq[0]
+                    freq = int(freq)
+                    if idx == limit_words:
+                        break
+                    if freq < limit_freq:
+                        break
+                else:
+                    freq = 1
 
                 word_dict[word] = freq
 

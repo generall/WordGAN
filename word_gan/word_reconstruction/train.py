@@ -10,10 +10,10 @@ from allennlp.data import Vocabulary
 from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file
 
 from word_gan.model.embedding_to_word import EmbeddingToWord
-from word_gan.settings import DATA_DIR, TEST_DATA_DIR
+from word_gan.settings import DATA_DIR, TEST_DATA_DIR, SETTINGS
 from word_gan.word_reconstruction.dataset import DictDatasetReader
 
-EMBEDDING_DIM = 300
+EMBEDDING_DIM = SETTINGS.EMBEDDINGS_SIZE
 DEFAULT_EMBEDDING_PATH = os.path.join(TEST_DATA_DIR, 'model_small.txt')
 OUT_MODEL_PATH = os.getenv("OUT_MODEL_PATH", os.path.join(TEST_DATA_DIR, 'test_v2w_model.th'))
 NAMESPACE = 'target'

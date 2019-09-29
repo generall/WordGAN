@@ -14,12 +14,11 @@ class Discriminator(Model):
 
     def __init__(self,
                  w2v: TextFieldEmbedder,
-                 synonym_discriminator: SynonymDiscriminator,
                  vocab: Vocabulary):
         super().__init__(vocab)
 
         self.w2v = w2v
-        self.synonym_discriminator = synonym_discriminator
+        self.synonym_discriminator = SynonymDiscriminator(w2v.get_output_dim())
         self.loss = nn.BCEWithLogitsLoss()
 
     def forward(

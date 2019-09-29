@@ -10,14 +10,12 @@ from word_gan.model.discriminator import Discriminator
 from word_gan.model.synonym_discriminator import SynonymDiscriminator
 from word_gan.model.embedding_to_word import EmbeddingToWord
 from word_gan.model.synonyms_generator import SynonymGenerator
-from word_gan.model.word_reconstruction import WordReconstruction
 
 
 class Generator(Model):
 
     def __init__(
             self,
-            embedding_dim,
             w2v: TextFieldEmbedder,
             v2w: EmbeddingToWord,
             vocab: Vocabulary,
@@ -25,7 +23,6 @@ class Generator(Model):
     ):
         """
 
-        :param embedding_dim:
         :param v2w: vector to word mapping layer. Not trainable
         :param vocab:
         """
@@ -34,7 +31,7 @@ class Generator(Model):
         self.synonym_delta = synonym_delta
         self.w2v = w2v
         self.v2w = v2w
-        self.synonyms_generator = SynonymGenerator(embedding_dim)
+        self.synonyms_generator = SynonymGenerator(w2v.get_output_dim())
 
         self.generator_context_size = 1
         self.discriminator_context_size = Discriminator.context_size

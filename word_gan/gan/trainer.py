@@ -136,26 +136,3 @@ class GanTrainer(TrainerBase):
         return metrics
 
 
-if __name__ == '__main__':
-
-    freq_dict_path = os.path.join(DATA_DIR, 'count_1w.txt')
-
-    if len(sys.argv) > 1:
-        text_data_path = sys.argv[1]
-    else:
-        text_data_path = os.path.join(DATA_DIR, 'test_data.txt')
-
-    vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
-
-    print('target size', vocab.get_vocab_size('target'))
-    print('tokens size', vocab.get_vocab_size('tokens'))
-
-    reader = TextDatasetReader(
-        dict_path=freq_dict_path,
-        limit_words=vocab.get_vocab_size('target'),
-        limit_freq=0
-    )
-
-    train_dataset = reader.read(text_data_path)
-
-    iterator = BasicIterator(batch_size=BATCH_SIZE)

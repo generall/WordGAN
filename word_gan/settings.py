@@ -11,5 +11,7 @@ class BaseSettings:
     # target: Changeable words
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
 
+    EMBEDDINGS_SIZE = 300
+
 
 SETTINGS = BaseSettings
