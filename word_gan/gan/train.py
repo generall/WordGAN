@@ -8,6 +8,7 @@ from allennlp.data.iterators import BasicIterator
 from allennlp.modules import TextFieldEmbedder
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file
+from allennlp.training.checkpointer import Checkpointer
 from loguru import logger
 from torch import optim
 
@@ -129,18 +130,42 @@ if __name__ == '__main__':
     else:
         cuda_device = -1
 
+    serialization_dir = os.path.join(SETTINGS.DATA_DIR, 'serialization')
+
+    generator_checkpoint_path = os.path.join(serialization_dir, 'generator')
+    os.makedirs(generator_checkpoint_path, exist_ok=True)
+    generator_checkpointer = Checkpointer(
+        serialization_dir=generator_checkpoint_path,
+        num_serialized_models_to_keep=1
+    )
+
+    discriminator_checkpoint_path = os.path.join(serialization_dir, 'discriminator')
+    os.makedirs(discriminator_checkpoint_path, exist_ok=True)
+    discriminator_checkpointer = Checkpointer(
+        serialization_dir=discriminator_checkpoint_path,
+        num_serialized_models_to_keep=1
+    )
+
+    logger = WordGanLogger(
+        serialization_path=os.path.join(serialization_dir, 'train_examples.txt'),
+        batch_period=99,
+        vocab=vocab
+    )
+
     trainer = GanTrainer(
-        serialization_dir=os.path.join(SETTINGS.DATA_DIR, 'serialization'),
+        serialization_dir=serialization_dir,
         data=train_dataset,
         generator=generator,
         discriminator=discriminator,
         generator_optimizer=generator_optimizer,
         discriminator_optimizer=discriminator_optimizer,
+        generator_checkpointer=generator_checkpointer,
+        discriminator_checkpointer=discriminator_checkpointer,
         batch_iterator=iterator,
         cuda_device=cuda_device,
         max_batches=50,
-        num_epochs=int(os.getenv("EPOCHS", 10)),
-        train_logger=WordGanLogger()
+        num_epochs=int(os.getenv("EPOCHS", 2)),
+        train_logger=logger
     )
 
     trainer.train()

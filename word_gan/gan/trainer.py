@@ -3,8 +3,10 @@ from typing import Union, List, Dict, Any, Iterable, Optional
 import tqdm
 from allennlp.data import DataIterator, Instance
 from allennlp.training import TrainerBase
+from allennlp.training.checkpointer import Checkpointer
 from allennlp.training.metrics import BooleanAccuracy
 from allennlp.training.tensorboard_writer import TensorboardWriter
+from loguru import logger
 from torch.optim.optimizer import Optimizer
 
 from word_gan.gan.train_logger import TrainLogger
@@ -24,6 +26,8 @@ class GanTrainer(TrainerBase):
                  discriminator: Discriminator,
                  generator_optimizer: Optimizer,
                  discriminator_optimizer: Optimizer,
+                 generator_checkpointer: Checkpointer,
+                 discriminator_checkpointer: Checkpointer,
                  batch_iterator: DataIterator,
                  cuda_device: Union[int, List] = -1,
                  max_batches: int = 100,
@@ -38,6 +42,9 @@ class GanTrainer(TrainerBase):
         :param max_batches: max batches per epoch
         """
         super().__init__(serialization_dir, cuda_device)
+
+        self.discriminator_checkpointer = discriminator_checkpointer
+        self.generator_checkpointer = generator_checkpointer
 
         self.train_logger = train_logger
         self.discriminator_optimizer = discriminator_optimizer
@@ -66,6 +73,56 @@ class GanTrainer(TrainerBase):
             should_log_learning_rate=False
         )
 
+    def _restore_checkpoint(self) -> int:
+        generator_state, generator_training_state = self.generator_checkpointer.restore_checkpoint()
+
+        if not generator_training_state:
+            # No checkpoint to restore, start at 0
+            return 0
+
+        self.generator.load_state_dict(generator_state)
+        self.generator_optimizer.load_state_dict(generator_training_state["optimizer"])
+
+        batch_num_total = generator_training_state.get('batch_num_total')
+        if batch_num_total is not None:
+            self._batch_num_total = batch_num_total
+
+        discriminator_state, discriminator_training_state = self.discriminator_checkpointer.restore_checkpoint()
+
+        if not discriminator_training_state:
+            # No checkpoint to restore, start at 0
+            return 0
+
+        self.discriminator.load_state_dict(discriminator_state)
+        self.discriminator_optimizer.load_state_dict(discriminator_training_state["optimizer"])
+
+        return generator_training_state.get('epoch', 0)
+
+    def _save_checkpoint(self, epoch):
+        generator_training_states = {
+            "optimizer": self.generator_optimizer.state_dict(),
+            "batch_num_total": self._batch_num_total
+        }
+
+        self.generator_checkpointer.save_checkpoint(
+            epoch=epoch,
+            model_state=self.generator.state_dict(),
+            training_states=generator_training_states,
+            is_best_so_far=False
+        )
+
+        discriminator_training_states = {
+            "optimizer": self.discriminator_optimizer.state_dict(),
+            "batch_num_total": self._batch_num_total
+        }
+
+        self.discriminator_checkpointer.save_checkpoint(
+            epoch=epoch,
+            model_state=self.discriminator.state_dict(),
+            training_states=discriminator_training_states,
+            is_best_so_far=False
+        )
+
     def train_one_epoch(self) -> Dict[str, float]:
         self.generator.train()
         self.discriminator.train()
@@ -75,10 +132,10 @@ class GanTrainer(TrainerBase):
         discriminator_fake_loss = 0.0
 
         # First train the discriminator
-        data_iterator = self.batch_iterator(self.data, num_epochs=1)
+        data_iterator = self.batch_iterator(self.data, num_epochs=1, shuffle=False)
 
         discriminator_quota = self.max_batches
-        generator_quota = self.max_batches
+        generator_quota = self.max_batches * 2
 
         for batch in tqdm.tqdm(data_iterator):
             # Train discriminator while it has quotas.
@@ -94,14 +151,16 @@ class GanTrainer(TrainerBase):
                 real_error.backward()
 
                 # Fake example, want discriminator to predict 0.
-                fake_data = self.generator(**batch)["output_indexes"]
+                generator_output = self.generator(**batch)
+                fake_data = generator_output["discriminator_overrides"]
 
                 fake_batch = {
                     **batch,
-                    'word': fake_data
+                    **fake_data
                 }
 
-                fake_error = self.discriminator(**fake_batch, labels=0)["loss"]
+                fake_predictions = self.discriminator(**fake_batch, labels=0)
+                fake_error = fake_predictions["loss"]
                 fake_error.backward()
 
                 discriminator_real_loss += real_error.sum().item()
@@ -123,13 +182,13 @@ class GanTrainer(TrainerBase):
                 self.generator_optimizer.step()
 
                 if self.train_logger:
-                    self.train_logger.log_generator(batch, generated)
+                    self.train_logger.log_info(batch, generated, self._batch_num_total)
 
                 generator_quota -= 1
 
             else:
                 discriminator_quota = self.max_batches
-                generator_quota = self.max_batches
+                generator_quota = self.max_batches * 2
 
                 discriminator_metrics = self.discriminator.get_metrics(reset=False)
                 generator_metrics = self.generator.get_metrics(reset=False)
@@ -147,17 +206,22 @@ class GanTrainer(TrainerBase):
         discriminator_metrics = self.discriminator.get_metrics(reset=True)
         generator_metrics = self.generator.get_metrics(reset=True)
         return {
-            "generator_loss": generator_loss,
-            "discriminator_fake_loss": discriminator_fake_loss,
-            "discriminator_real_loss": discriminator_real_loss,
+            # "generator_loss": generator_loss,
+            # "discriminator_fake_loss": discriminator_fake_loss,
+            # "discriminator_real_loss": discriminator_real_loss,
             **add_prefix(discriminator_metrics, 'discriminator'),
             **add_prefix(generator_metrics, 'generator'),
         }
 
     def train(self) -> Dict[str, Any]:
+
+        restored_epoch = self._restore_checkpoint()
+        logger.info(f"Restoring epoch: {restored_epoch}")
+
         metrics = {}
         for epoch in range(self.num_epochs):
             metrics = self.train_one_epoch()
             self._tensorboard.log_metrics(train_metrics=metrics, epoch=epoch, log_to_console=True)
+            self._save_checkpoint(epoch)
 
         return metrics

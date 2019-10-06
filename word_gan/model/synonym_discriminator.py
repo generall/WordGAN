@@ -17,7 +17,7 @@ class SynonymDiscriminator(nn.Module):
         self.encoder = MultilayerCnnEncoder(
             embedding_dim=self.embedding_dim,
             num_filters=self.embedding_dim,
-            layers=2,
+            layers=1,
             ngram_filter_sizes=(2, 3),
             output_dim=self.embedding_dim
         )

@@ -158,14 +158,17 @@ class Generator(Model):
         # [batch_size]
         target_indexes = word['target'].squeeze()
 
-        target_synonym_indexes = torch.argmax(self._adjust_scored(synonym_words_score, target_indexes, -1), dim=1)
+        target_synonym_indexes = torch.argmax(synonym_words_score, dim=1)
         tokens_synonym_indexes = self.targets_to_tokens[target_synonym_indexes]
 
         result = {
             'output_scores': synonym_words_score,
-            'output_indexes': {
-                "target": target_indexes,
-                "tokens": tokens_synonym_indexes
+            'generated_indexes': {
+                "token_indexes":  tokens_synonym_indexes,
+                "target_indexes": target_synonym_indexes,
+            },
+            'discriminator_overrides': {
+                "word_vectors": synonym_vectors
             }
         }
 

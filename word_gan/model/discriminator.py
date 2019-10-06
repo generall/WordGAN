@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 from allennlp.modules import TextFieldEmbedder
@@ -49,6 +49,7 @@ class Discriminator(Model):
             left_context: Dict[str, torch.LongTensor],
             word: Dict[str, torch.LongTensor],
             right_context: Dict[str, torch.LongTensor],
+            word_vectors: Optional[torch.LongTensor] = None,
             labels=None
     ) -> Dict[str, torch.Tensor]:
         """
@@ -56,6 +57,7 @@ class Discriminator(Model):
         :param left_context:  Dict[str, torch.LongTensor]
         :param word:  Dict[str, torch.LongTensor]
         :param right_context:  Dict[str, torch.LongTensor]
+        :param word_vectors: Discriminator can also use directly provided word vectors. Shape: [batch_size, embedding_dim]
         :param labels:
         :return:
         """
@@ -64,8 +66,9 @@ class Discriminator(Model):
         left_context_vectors = self.w2v(left_context)
         right_context_vectors = self.w2v(right_context)
 
-        # shape: [batch_size, embedding_dim]
-        word_vectors: torch.Tensor = self.w2v(word).squeeze(1)
+        if word_vectors is None:
+            # shape: [batch_size, embedding_dim]
+            word_vectors: torch.Tensor = self.w2v(word).squeeze(1)
 
         batch_size, *_ = word_vectors.shape
 
