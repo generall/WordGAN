@@ -3,3 +3,5 @@ allennlp==0.8.5
 nltk
 loguru
 torch==1.2.0
+pandas
+numpy
