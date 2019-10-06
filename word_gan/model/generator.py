@@ -48,12 +48,14 @@ class Generator(Model):
         self.targets_to_tokens.requires_grad = False
 
         self.good_synonyms = Average()
+        self.good_loss = Average()
         self.accuracy = BooleanAccuracy()
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {
             'accuracy': self.accuracy.get_metric(reset),
-            'good_synonyms': self.good_synonyms.get_metric(reset)
+            'good_synonyms': self.good_synonyms.get_metric(reset),
+            'good_loss': self.good_loss.get_metric(reset)
         }
 
     @classmethod
@@ -195,6 +197,8 @@ class Generator(Model):
             self.accuracy(discriminator_vals, required_predictions.long())
 
             guess_loss = self.loss(discriminator_predictions, required_predictions)
+
+            self.good_loss(guess_loss)
 
             # If generated synonym is same as initial word - the loss is this synonym probability
             # If not - loss is obtained from ability to trick discriminator

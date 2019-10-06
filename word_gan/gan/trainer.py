@@ -1,13 +1,10 @@
 from typing import Union, List, Dict, Any, Iterable, Optional
 
-import numpy as np
-import torch
-import json
 import tqdm
 from allennlp.data import DataIterator, Instance
 from allennlp.training import TrainerBase
 from allennlp.training.metrics import BooleanAccuracy
-from loguru import logger
+from allennlp.training.tensorboard_writer import TensorboardWriter
 from torch.optim.optimizer import Optimizer
 
 from word_gan.gan.train_logger import TrainLogger
@@ -58,6 +55,17 @@ class GanTrainer(TrainerBase):
         self.discriminator_false_acc = BooleanAccuracy()
         self.generator_acc = BooleanAccuracy()
 
+        self._batch_num_total = 0
+
+        self._tensorboard = TensorboardWriter(
+            get_batch_num_total=lambda: self._batch_num_total,
+            serialization_dir=serialization_dir,
+            summary_interval=100,
+            histogram_interval=None,
+            should_log_parameter_statistics=True,
+            should_log_learning_rate=False
+        )
+
     def train_one_epoch(self) -> Dict[str, float]:
         self.generator.train()
         self.discriminator.train()
@@ -76,6 +84,7 @@ class GanTrainer(TrainerBase):
             # Train discriminator while it has quotas.
             # When it's empty, assign quotas to generator
 
+            self._batch_num_total += 1
             if discriminator_quota > 0:
                 self.discriminator_optimizer.zero_grad()
 
@@ -122,9 +131,21 @@ class GanTrainer(TrainerBase):
                 discriminator_quota = self.max_batches
                 generator_quota = self.max_batches
 
+                discriminator_metrics = self.discriminator.get_metrics(reset=False)
+                generator_metrics = self.generator.get_metrics(reset=False)
+
+                metrics = {
+                    "batch_generator_loss": generator_loss,
+                    "batch_discriminator_fake_loss": discriminator_fake_loss,
+                    "batch_discriminator_real_loss": discriminator_real_loss,
+                    **add_prefix(discriminator_metrics, 'batch_discriminator'),
+                    **add_prefix(generator_metrics, 'batch_generator'),
+                }
+
+                self._tensorboard.log_metrics(train_metrics=metrics, epoch=None, log_to_console=False)
+
         discriminator_metrics = self.discriminator.get_metrics(reset=True)
         generator_metrics = self.generator.get_metrics(reset=True)
-
         return {
             "generator_loss": generator_loss,
             "discriminator_fake_loss": discriminator_fake_loss,
@@ -135,9 +156,8 @@ class GanTrainer(TrainerBase):
 
     def train(self) -> Dict[str, Any]:
         metrics = {}
-        for _ in range(self.num_epochs):
+        for epoch in range(self.num_epochs):
             metrics = self.train_one_epoch()
-
-            logger.info(f"Metrics: {json.dumps(metrics, indent=2)}")
+            self._tensorboard.log_metrics(train_metrics=metrics, epoch=epoch, log_to_console=True)
 
         return metrics

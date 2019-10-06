@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -69,6 +70,7 @@ def load_v2w(
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
 
     freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
     v2w_model_path = os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th')
@@ -136,8 +138,8 @@ if __name__ == '__main__':
         discriminator_optimizer=discriminator_optimizer,
         batch_iterator=iterator,
         cuda_device=cuda_device,
-        max_batches=20,
-        num_epochs=10,
+        max_batches=50,
+        num_epochs=5,
         train_logger=WordGanLogger()
     )
 
