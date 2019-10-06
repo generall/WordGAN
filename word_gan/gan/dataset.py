@@ -1,9 +1,13 @@
+import os
 from typing import Iterable, Dict
 
-from allennlp.data import DatasetReader, Instance, TokenIndexer
+from allennlp.data import DatasetReader, Instance, TokenIndexer, Token, Vocabulary
 from allennlp.data.fields import TextField
+from allennlp.data.iterators import BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from nltk.tokenize import WordPunctTokenizer
+
+from word_gan.settings import SETTINGS
 
 
 class TextDatasetReader(DatasetReader):
@@ -16,12 +20,18 @@ class TextDatasetReader(DatasetReader):
         word_dict = {}
         with open(file_path) as fd:
             for idx, line in enumerate(fd):
-                word, freq = line.strip().split()
-                freq = int(freq)
+                word, *freq = line.strip().split()
+
                 if idx == limit_words:
                     break
-                if freq < limit_freq:
-                    break
+
+                if len(freq) > 0:
+                    freq = freq[0]
+                    freq = int(freq)
+                    if freq < limit_freq:
+                        break
+                else:
+                    freq = 1
 
                 word_dict[word] = freq
 
@@ -43,10 +53,13 @@ class TextDatasetReader(DatasetReader):
         self.tokenizer = WordPunctTokenizer()
         self.token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
 
-        self.target_indexer = {"target": SingleIdTokenIndexer(
-            namespace='target',
-            lowercase_tokens=True
-        )}
+        self.target_indexer = {
+            "target": SingleIdTokenIndexer(
+                namespace='target',
+                lowercase_tokens=True
+            ),
+            "tokens": SingleIdTokenIndexer()
+        }
 
         self.left_padding = 'BOS'
         self.right_padding = 'EOS'
@@ -61,10 +74,10 @@ class TextDatasetReader(DatasetReader):
         if len(right_context) < self.max_context_size:
             right_context = right_context + [self.right_padding]
 
-        left_context = TextField(left_context, self.token_indexers)
-        right_context = TextField(right_context, self.token_indexers)
+        left_context = TextField([Token(token) for token in left_context], self.token_indexers)
+        right_context = TextField([Token(token) for token in right_context], self.token_indexers)
 
-        target_token_field = TextField([target_word], self.target_indexer)
+        target_token_field = TextField([Token(target_word)], self.target_indexer)
 
         return Instance({
             "left_context": left_context,
@@ -96,3 +109,31 @@ class TextDatasetReader(DatasetReader):
                 for idx, token in enumerate(tokens):
                     if token in self.word_dict:
                         yield self.text_to_instance(tokens, idx)
+
+
+if __name__ == '__main__':
+    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
+
+    vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
+
+    print('target size', vocab.get_vocab_size('target'))
+    print('tokens size', vocab.get_vocab_size('tokens'))
+
+    reader = TextDatasetReader(
+        dict_path=freq_dict_path,
+        limit_words=vocab.get_vocab_size('target'),
+        limit_freq=0
+    )
+
+    text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data_sample.txt')
+
+    train_dataset = reader.read(text_data_path)
+
+    iterator = BasicIterator(batch_size=SETTINGS.BATCH_SIZE)
+
+    iterator.index_with(vocab)
+
+    data_iterator = iterator(train_dataset, num_epochs=1)
+
+    for idx, batch in enumerate(data_iterator):
+        print(idx)

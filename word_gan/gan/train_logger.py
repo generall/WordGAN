@@ -10,10 +10,7 @@ class TrainLogger:
         pass
 
 
-class WordGanLogger:
-
-    def __init__(self):
-        pass
+class WordGanLogger(TrainLogger):
 
     def log_generator(self, batch, result):
         pass

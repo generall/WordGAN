@@ -37,8 +37,7 @@ class SynonymDiscriminator(nn.Module):
         :param left_context: [batch_size, context_size, embedding_size]
         :param word: vector of the word of interest [batch_size, embedding_size]
         :param right_context: [batch_size, context_size, embedding_size]
-        :param labels: if the `word` is original or not. Shape: [batch_size]
-        :return:
+        :return: Scores for each batch [batch_size]
         """
 
         # shape: [batch_size, sent_length, embedding_size]

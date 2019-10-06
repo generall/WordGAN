@@ -16,3 +16,26 @@ ELMo, BERT and other context embeddings could not be used in this configuration
 * **Train corpora** - large text collection to train on.
 
 
+## Build v2w vectors
+
+We need reverse w2v for generator. 
+We can do it by normalizing word embeddings.
+
+Use following command:
+
+* Build list of top-frequent words, presenting in word2vec
+
+```bash
+comm -12 \
+<(cut -f 1 -d ' ' ./data/model.txt | sort ) \
+<(cat ./data/count_1w.txt | cut -f 1 | sort) > ./data/common.txt
+```
+
+* Normalize embedding matrix
+
+```bash
+NUM_WORDS=100000 \
+MODE='prod' \
+python -m word_gan.word_reconstruction.train
+```
+

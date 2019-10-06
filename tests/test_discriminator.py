@@ -7,7 +7,7 @@ from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 class TestDiscriminator(TestCase):
     def test_forward(self):
-        descriminator = SynonymDiscriminator(10, vocab=None)
+        descriminator = SynonymDiscriminator(10)
 
         batch_size = 5
 
@@ -16,23 +16,12 @@ class TestDiscriminator(TestCase):
 
         word = torch.rand(batch_size, 10)
 
-        labels = (torch.rand(batch_size) > 0.5).float()
+        # labels = (torch.rand(batch_size) > 0.5).float()
 
-        res = descriminator.forward(
-            left_context=t1,
-            word=word,
-            right_context=t2,
-            labels=labels
-        )
-
-        self.assertIn('loss', res)
-
-        res = descriminator.forward(
+        res = descriminator(
             left_context=t1,
             word=word,
             right_context=t2
         )
 
-        self.assertIn('scores', res)
-
-        self.assertEqual(res['scores'].shape[0], batch_size)
+        self.assertEqual(res.shape[0], batch_size)
