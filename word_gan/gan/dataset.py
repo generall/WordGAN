@@ -1,9 +1,13 @@
+import os
 from typing import Iterable, Dict
 
-from allennlp.data import DatasetReader, Instance, TokenIndexer, Token
+from allennlp.data import DatasetReader, Instance, TokenIndexer, Token, Vocabulary
 from allennlp.data.fields import TextField
+from allennlp.data.iterators import BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from nltk.tokenize import WordPunctTokenizer
+
+from word_gan.settings import SETTINGS
 
 
 class TextDatasetReader(DatasetReader):
@@ -105,3 +109,31 @@ class TextDatasetReader(DatasetReader):
                 for idx, token in enumerate(tokens):
                     if token in self.word_dict:
                         yield self.text_to_instance(tokens, idx)
+
+
+if __name__ == '__main__':
+    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
+
+    vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
+
+    print('target size', vocab.get_vocab_size('target'))
+    print('tokens size', vocab.get_vocab_size('tokens'))
+
+    reader = TextDatasetReader(
+        dict_path=freq_dict_path,
+        limit_words=vocab.get_vocab_size('target'),
+        limit_freq=0
+    )
+
+    text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data_sample.txt')
+
+    train_dataset = reader.read(text_data_path)
+
+    iterator = BasicIterator(batch_size=SETTINGS.BATCH_SIZE)
+
+    iterator.index_with(vocab)
+
+    data_iterator = iterator(train_dataset, num_epochs=1)
+
+    for idx, batch in enumerate(data_iterator):
+        print(idx)

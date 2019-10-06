@@ -137,7 +137,7 @@ if __name__ == '__main__':
         batch_iterator=iterator,
         cuda_device=cuda_device,
         max_batches=20,
-        num_epochs=2,
+        num_epochs=10,
         train_logger=WordGanLogger()
     )
 

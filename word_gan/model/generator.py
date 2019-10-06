@@ -4,6 +4,7 @@ import torch
 from allennlp.data import Vocabulary
 from allennlp.models import Model
 from allennlp.modules import TextFieldEmbedder
+from allennlp.training.metrics import Average, BooleanAccuracy
 from torch import nn
 from torch.nn.parameter import Parameter
 
@@ -45,6 +46,15 @@ class Generator(Model):
         )
 
         self.targets_to_tokens.requires_grad = False
+
+        self.good_synonyms = Average()
+        self.accuracy = BooleanAccuracy()
+
+    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
+        return {
+            'accuracy': self.accuracy.get_metric(reset),
+            'good_synonyms': self.good_synonyms.get_metric(reset)
+        }
 
     @classmethod
     def _build_mapping(cls, vocab, src_namespace, dist_namespace):
@@ -161,7 +171,6 @@ class Generator(Model):
             discriminator_left_context = left_context_vectors[:, -self.discriminator_context_size:, :]
             discriminator_right_context = right_context_vectors[:, :self.discriminator_context_size, :]
 
-            # ToDo: Fix here
             discriminator_predictions = discriminator(
                 discriminator_left_context,
                 synonym_vectors,
@@ -171,6 +180,8 @@ class Generator(Model):
             # shape: [batch_size], [batch_size]
             loss_mask, max_synonym_scores = self._get_loss_mask(target_indexes, synonym_words_score, self.synonym_delta)
 
+            self.good_synonyms(1 - (loss_mask.sum().item() / loss_mask.size(0)))
+
             # shape: [wrong_synonym_batch]
             wrong_synonyms_scores = max_synonym_scores[loss_mask]
 
@@ -179,6 +190,9 @@ class Generator(Model):
 
             # We want to trick discriminator here
             required_predictions = torch.ones_like(discriminator_predictions)
+
+            discriminator_vals = (discriminator_predictions > 0.5).long()
+            self.accuracy(discriminator_vals, required_predictions.long())
 
             guess_loss = self.loss(discriminator_predictions, required_predictions)
 

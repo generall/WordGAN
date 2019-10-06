@@ -2,14 +2,21 @@ from typing import Union, List, Dict, Any, Iterable, Optional
 
 import numpy as np
 import torch
+import json
 import tqdm
 from allennlp.data import DataIterator, Instance
 from allennlp.training import TrainerBase
+from allennlp.training.metrics import BooleanAccuracy
+from loguru import logger
 from torch.optim.optimizer import Optimizer
 
 from word_gan.gan.train_logger import TrainLogger
 from word_gan.model.discriminator import Discriminator
 from word_gan.model.generator import Generator
+
+
+def add_prefix(dct: dict, prefix) -> dict:
+    return dict((f"{prefix}_{key}", val) for key, val in dct.items())
 
 
 class GanTrainer(TrainerBase):
@@ -47,6 +54,10 @@ class GanTrainer(TrainerBase):
         self.max_batches = max_batches
         self.num_epochs = num_epochs
 
+        self.discriminator_true_acc = BooleanAccuracy()
+        self.discriminator_false_acc = BooleanAccuracy()
+        self.generator_acc = BooleanAccuracy()
+
     def train_one_epoch(self) -> Dict[str, float]:
         self.generator.train()
         self.discriminator.train()
@@ -56,12 +67,12 @@ class GanTrainer(TrainerBase):
         discriminator_fake_loss = 0.0
 
         # First train the discriminator
-        data_iterator = self.batch_iterator(self.data)
+        data_iterator = self.batch_iterator(self.data, num_epochs=1)
 
         discriminator_quota = self.max_batches
         generator_quota = self.max_batches
 
-        for batch in data_iterator:
+        for batch in tqdm.tqdm(data_iterator):
             # Train discriminator while it has quotas.
             # When it's empty, assign quotas to generator
 
@@ -69,8 +80,8 @@ class GanTrainer(TrainerBase):
                 self.discriminator_optimizer.zero_grad()
 
                 # Real example, want discriminator to predict 1.
-
-                real_error = self.discriminator(**batch, labels=torch.ones(self.batch_iterator._batch_size))["loss"]
+                real_predictions = self.discriminator(**batch, labels=1)
+                real_error = real_predictions["loss"]
                 real_error.backward()
 
                 # Fake example, want discriminator to predict 0.
@@ -81,8 +92,7 @@ class GanTrainer(TrainerBase):
                     'word': fake_data
                 }
 
-                fake_error = self.discriminator(**fake_batch,
-                                                labels=torch.zeros(self.batch_iterator._batch_size))["loss"]
+                fake_error = self.discriminator(**fake_batch, labels=0)["loss"]
                 fake_error.backward()
 
                 discriminator_real_loss += real_error.sum().item()
@@ -95,7 +105,7 @@ class GanTrainer(TrainerBase):
                 # Now train the generator
                 self.generator_optimizer.zero_grad()
 
-                generated = self.generator(**batch, discriminator=self.discriminator)
+                generated = self.generator(**batch, discriminator=self.discriminator.synonym_discriminator)
                 fake_error = generated["loss"]
                 fake_error.backward()
 
@@ -112,18 +122,22 @@ class GanTrainer(TrainerBase):
                 discriminator_quota = self.max_batches
                 generator_quota = self.max_batches
 
+        discriminator_metrics = self.discriminator.get_metrics(reset=True)
+        generator_metrics = self.generator.get_metrics(reset=True)
+
         return {
             "generator_loss": generator_loss,
             "discriminator_fake_loss": discriminator_fake_loss,
             "discriminator_real_loss": discriminator_real_loss,
+            **add_prefix(discriminator_metrics, 'discriminator'),
+            **add_prefix(generator_metrics, 'generator'),
         }
 
     def train(self) -> Dict[str, Any]:
-        with tqdm.trange(self.num_epochs) as epochs:
-            for _ in epochs:
-                metrics = self.train_one_epoch()
-                description = (f'gl: {metrics["generator_loss"]:.3f} '
-                               f'dfl: {metrics["discriminator_fake_loss"]:.3f} '
-                               f'drl: {metrics["discriminator_real_loss"]:.3f} ')
-                epochs.set_description(description)
+        metrics = {}
+        for _ in range(self.num_epochs):
+            metrics = self.train_one_epoch()
+
+            logger.info(f"Metrics: {json.dumps(metrics, indent=2)}")
+
         return metrics
