@@ -139,7 +139,7 @@ if __name__ == '__main__':
         batch_iterator=iterator,
         cuda_device=cuda_device,
         max_batches=50,
-        num_epochs=5,
+        num_epochs=os.getenv("EPOCHS", 10),
         train_logger=WordGanLogger()
     )
 
