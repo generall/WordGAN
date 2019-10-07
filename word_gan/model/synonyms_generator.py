@@ -28,8 +28,8 @@ class SynonymGenerator(nn.Module):
         self.ff = FeedForward(
             input_dim=self.embedding_dim * 2,
             num_layers=2,
-            hidden_dims=[self.embedding_dim, self.embedding_dim],
-            activations=[Activation.by_name('relu')(),
+            hidden_dims=[self.embedding_dim * 2, self.embedding_dim],
+            activations=[Activation.by_name('leaky_relu')(),
                          Activation.by_name('linear')()],
             dropout=[0.2, 0]
         )

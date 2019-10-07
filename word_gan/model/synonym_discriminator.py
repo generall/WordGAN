@@ -18,15 +18,16 @@ class SynonymDiscriminator(nn.Module):
             embedding_dim=self.embedding_dim,
             num_filters=self.embedding_dim,
             layers=1,
-            ngram_filter_sizes=(2, 3),
-            output_dim=self.embedding_dim
+            ngram_filter_sizes=(3, ),
+            output_dim=self.embedding_dim,
+            pooling='avg'
         )
 
         self.ff = FeedForward(
             input_dim=self.embedding_dim * 2,
             num_layers=2,
             hidden_dims=[self.embedding_dim, 1],
-            activations=[Activation.by_name('relu')(),
+            activations=[Activation.by_name('leaky_relu')(),
                          Activation.by_name('linear')()],
             dropout=[0.2, 0]
         )

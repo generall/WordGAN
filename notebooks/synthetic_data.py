@@ -31,11 +31,11 @@ def gen_word(word_length):
 # In[3]:
 
 
-words = [gen_word((4, 5)) for i in range(50)]
+words = [gen_word((4, 5)) for i in range(25)]
 
-context_words = [gen_word((4, 5)) for i in range(20)]
+context_words = [gen_word((4, 5)) for i in range(10)]
 
-noize_words = [gen_word((4, 5)) for i in range(200)] + [''] * 100
+noize_words = [gen_word((4, 5)) for i in range(50)] + [''] * 20
 
 # In[4]:
 
@@ -96,7 +96,7 @@ gen_sentence(('aaa', 'bbb', 'ccc'))
 
 
 with open('../data/synthetic/train_data.txt', 'w') as out:
-    for i in range(20_000):
+    for i in range(10_000):
         entity = random.choice(entities)
         out.write(gen_sentence(entity))
         out.write('\n')

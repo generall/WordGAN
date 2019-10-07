@@ -120,8 +120,8 @@ if __name__ == '__main__':
         vocab=vocab
     )
 
-    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
-    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
+    generator_optimizer = optim.Adam(generator.parameters(), lr=0.01)
+    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.01)
 
     if torch.cuda.is_available():
         cuda_device = 0

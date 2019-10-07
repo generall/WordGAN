@@ -46,6 +46,10 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
         After doing convolutions and pooling, we'll project the collected features into a vector of
         this size.  If this value is ``None``, we will just return the result of the max pooling,
         giving an output of shape ``len(ngram_filter_sizes) * num_filters``.
+    pooling : ``str``, optional (default=``"max"``)
+        What method to use for downsampling:
+        * "max" - For Max Pooling
+        * "avg" - For Average Pooling
     """
 
     def __init__(self,
@@ -54,8 +58,10 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
                  layers: int = 1,
                  ngram_filter_sizes: Tuple[int, ...] = (2, 3, 4, 5),  # pylint: disable=bad-whitespace
                  conv_layer_activation: Activation = None,
-                 output_dim: Optional[int] = None) -> None:
+                 output_dim: Optional[int] = None,
+                 pooling='max') -> None:
         super(MultilayerCnnEncoder, self).__init__()
+        self._pooling = pooling
         self._layers = layers
         self._embedding_dim = embedding_dim
         self._num_filters = num_filters
@@ -78,12 +84,12 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
             for i, conv_layer in enumerate(layer_cnns):
                 self.add_module(f'conv_layer_{layer_num}_{i}', conv_layer)
 
-        maxpool_output_dim = self._num_filters * len(self._ngram_filter_sizes)
+        pool_output_dim = self._num_filters * len(self._ngram_filter_sizes)
         if self._output_dim:
-            self.projection_layer = Linear(maxpool_output_dim, self._output_dim)
+            self.projection_layer = Linear(pool_output_dim, self._output_dim)
         else:
             self.projection_layer = None
-            self._output_dim = maxpool_output_dim
+            self._output_dim = pool_output_dim
 
     @overrides
     def get_input_dim(self) -> int:
@@ -118,14 +124,19 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
 
             prev_tensors = next_tensors
 
-        filter_outputs = [tensor.max(dim=2)[0] for tensor in prev_tensors]
+        if self._pooling == 'max':
+            filter_outputs = [tensor.max(dim=2)[0] for tensor in prev_tensors]
+        elif self._pooling == 'avg':
+            filter_outputs = [tensor.mean(dim=2)[0] for tensor in prev_tensors]
+        else:
+            raise NotImplementedError(f"Pooling {self._pooling} is not implemented")
 
         # Now we have a list of `num_conv_layers` tensors of shape `(batch_size, num_filters)`.
         # Concatenating them gives us a tensor of shape `(batch_size, num_filters * num_conv_layers)`.
-        maxpool_output = torch.cat(filter_outputs, dim=1) if len(filter_outputs) > 1 else filter_outputs[0]
+        pool_output = torch.cat(filter_outputs, dim=1) if len(filter_outputs) > 1 else filter_outputs[0]
 
         if self.projection_layer:
-            result = self.projection_layer(maxpool_output)
+            result = self.projection_layer(pool_output)
         else:
-            result = maxpool_output
+            result = pool_output
         return result
