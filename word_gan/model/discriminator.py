@@ -22,11 +22,15 @@ class Discriminator(Model):
         self.synonym_discriminator = SynonymDiscriminator(w2v.get_output_dim())
         self.loss = nn.BCEWithLogitsLoss()
 
-        self.accuracy = BooleanAccuracy()
+        self.accuracy = [
+            BooleanAccuracy(),
+            BooleanAccuracy()
+        ]
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {
-            'accuracy': self.accuracy.get_metric(reset)
+            'accuracy_0': self.accuracy[0].get_metric(reset),
+            'accuracy_1': self.accuracy[1].get_metric(reset)
         }
 
     def discriminate(self, left_context, word, right_context):
@@ -87,10 +91,10 @@ class Discriminator(Model):
         result = {'probs': result_probs}
 
         if labels is not None:
-            labels = word_vectors.new_full(size=(batch_size,), fill_value=labels)
+            batch_labels = word_vectors.new_full(size=(batch_size,), fill_value=labels)
             result_vals = (result_probs > 0.5).long()
-            self.accuracy(result_vals, labels.long())
-            result['loss'] = self.loss(result_scores, labels)
+            self.accuracy[labels](result_vals, batch_labels.long())
+            result['loss'] = self.loss(result_scores, batch_labels)
         else:
             result['probs'] = result_probs
 

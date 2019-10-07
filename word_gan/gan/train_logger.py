@@ -34,7 +34,7 @@ class WordGanLogger(TrainLogger):
 
     def _generate_info(self, batch, result) -> List[str]:
         batch_size = batch['word']['tokens'].size(0)
-        sample_idx = random.randint(0, batch_size)
+        sample_idx = random.randint(0, batch_size - 1)
 
         left_context = self._to_words(batch['left_context']['tokens'][sample_idx])
         right_context = self._to_words(batch['right_context']['tokens'][sample_idx])
