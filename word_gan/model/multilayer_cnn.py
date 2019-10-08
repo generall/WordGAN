@@ -127,7 +127,7 @@ class MultilayerCnnEncoder(Seq2VecEncoder):
         if self._pooling == 'max':
             filter_outputs = [tensor.max(dim=2)[0] for tensor in prev_tensors]
         elif self._pooling == 'avg':
-            filter_outputs = [tensor.mean(dim=2)[0] for tensor in prev_tensors]
+            filter_outputs = [tensor.mean(dim=2) for tensor in prev_tensors]
         else:
             raise NotImplementedError(f"Pooling {self._pooling} is not implemented")
 

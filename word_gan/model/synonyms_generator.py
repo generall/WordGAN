@@ -21,8 +21,9 @@ class SynonymGenerator(nn.Module):
             num_filters=self.embedding_dim,
             layers=2,
             conv_layer_activation=Activation.by_name('tanh')(),
-            ngram_filter_sizes=(2, 3),
-            output_dim=self.embedding_dim
+            ngram_filter_sizes=(3, ),
+            output_dim=self.embedding_dim,
+            pooling='avg'
         )
 
         self.ff = FeedForward(
