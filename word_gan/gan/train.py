@@ -15,8 +15,8 @@ from torch import optim
 from word_gan.gan.dataset import TextDatasetReader
 from word_gan.gan.train_logger import WordGanLogger
 from word_gan.gan.trainer import GanTrainer
+from word_gan.model.candidates_selector import AllVocabCandidates
 from word_gan.model.discriminator import Discriminator
-from word_gan.model.embedding_to_word import EmbeddingToWord
 from word_gan.model.generator import Generator
 from word_gan.model.thrifty_embeddings import ThriftyEmbedding
 from word_gan.settings import SETTINGS
@@ -49,25 +49,7 @@ def load_w2v(
         allow_unmatched_keys=True
     )
 
-    return word_embeddings
-
-
-def load_v2w(
-        weights_file,
-        vocab,
-        namespace='target',
-        device=torch.device('cpu')
-):
-    model_state = torch.load(weights_file, map_location=device)
-
-    model: torch.nn.Module = EmbeddingToWord(
-        embedding_size=SETTINGS.EMBEDDINGS_SIZE,
-        words_count=vocab.get_vocab_size(namespace)
-    )
-
-    model.load_state_dict(model_state)
-
-    return model
+    return token_embedding, word_embeddings
 
 
 if __name__ == '__main__':
@@ -99,20 +81,20 @@ if __name__ == '__main__':
 
     iterator.index_with(vocab)
 
-    v2w_model: EmbeddingToWord = load_v2w(
-        weights_file=v2w_model_path,
-        vocab=vocab
-    )
-
-    w2v_model: TextFieldEmbedder = load_w2v(
+    w2v_embedding, w2v_model = load_w2v(
         weights_file=w2v_model_path,
         vocab=vocab,
     )
 
+    candidates_selector = AllVocabCandidates(vocab=vocab, w2v=w2v_embedding)
+
+    test_variants = candidates_selector.get_candidates({'target': torch.tensor([1, 2, 3])})
+
     generator: Generator = Generator(
         w2v=w2v_model,
-        v2w=v2w_model,
-        vocab=vocab
+        vocab=vocab,
+        candidates_selector=candidates_selector,
+
     )
 
     discriminator: Discriminator = Discriminator(
