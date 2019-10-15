@@ -67,7 +67,7 @@ class AllVocabCandidates(CandidatesSelector):
             word: Dict[str, torch.LongTensor]
     ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         # shape: [batch_size]
-        original_target_ids = word['target'].unsqueeze(-1)
+        original_target_ids = word['target']
 
         batch_size = original_target_ids.size(0)
 

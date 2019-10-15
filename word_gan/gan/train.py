@@ -88,8 +88,6 @@ if __name__ == '__main__':
 
     candidates_selector = AllVocabCandidates(vocab=vocab, w2v=w2v_embedding)
 
-    test_variants = candidates_selector.get_candidates({'target': torch.tensor([1, 2, 3])})
-
     generator: Generator = Generator(
         w2v=w2v_model,
         vocab=vocab,

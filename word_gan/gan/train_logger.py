@@ -27,9 +27,9 @@ class WordGanLogger(TrainLogger):
         super().__init__(serialization_path, batch_period)
         self.vocab = vocab
 
-    def _to_words(self, tsr: torch.Tensor):
+    def _to_words(self, tsr: torch.Tensor, namespace='tokens'):
         idxs = tsr.detach().cpu().tolist()
-        words = [self.vocab.get_token_from_index(x) for x in idxs]
+        words = [self.vocab.get_token_from_index(x, namespace=namespace) for x in idxs]
         return ' '.join(words)
 
     def _generate_info(self, batch, result) -> List[str]:
@@ -40,6 +40,6 @@ class WordGanLogger(TrainLogger):
         right_context = self._to_words(batch['right_context']['tokens'][sample_idx])
         word = self._to_words(batch['word']['tokens'][sample_idx])
 
-        synonym = self._to_words(result['generated_indexes']['token_indexes'][[sample_idx]])
+        synonym = self._to_words(result['generated_indexes']['target_indexes'][[sample_idx]], namespace='target')
 
         return [" ".join([left_context, word, right_context, '->', synonym])]

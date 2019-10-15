@@ -86,7 +86,7 @@ class Generator(Model):
 
         # [batch_size]
         selected_variant_indexes = torch.argmax(synonym_words_score, dim=1)
-        target_synonym_indexes = variant_ids[selected_variant_indexes]
+        target_synonym_indexes = variant_ids.gather(dim=1, index=selected_variant_indexes.unsqueeze(-1)).squeeze()
 
         result = {
             'output_scores': synonym_words_score,
@@ -116,8 +116,6 @@ class Generator(Model):
 
             guess_loss = self.loss(discriminator_predictions, required_predictions)
 
-            # If generated synonym is same as initial word - the loss is this synonym probability
-            # If not - loss is obtained from ability to trick discriminator
             result['loss'] = guess_loss
 
         return result

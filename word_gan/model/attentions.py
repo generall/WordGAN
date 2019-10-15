@@ -26,8 +26,8 @@ class MultilayerAttention(Attention):
         self.vector_dim = vector_dim
         self.matrix_dim = matrix_dim
 
-        self.ll1 = Linear(vector_dim, hidden_dims[0])
-        self.ll2 = Linear(matrix_dim, hidden_dims[0])
+        self.ll1 = Linear(matrix_dim, hidden_dims[0])
+        self.ll2 = Linear(vector_dim, hidden_dims[0])
 
         self.ff = FeedForward(
             input_dim=hidden_dims[0],
