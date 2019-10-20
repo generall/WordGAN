@@ -15,8 +15,12 @@ class Discriminator(Model):
 
     def __init__(self,
                  w2v: TextFieldEmbedder,
-                 vocab: Vocabulary):
+                 vocab: Vocabulary,
+                 noise_std=None,
+                 ):
         super().__init__(vocab)
+
+        self.noise_std = noise_std
 
         self.w2v = w2v
         self.synonym_discriminator = SynonymDiscriminator(w2v.get_output_dim())
@@ -74,7 +78,10 @@ class Discriminator(Model):
             # shape: [batch_size, embedding_dim]
             word_vectors: torch.Tensor = self.w2v(word).squeeze(1)
 
-        batch_size, *_ = word_vectors.shape
+        if self.noise_std:
+            word_vectors += torch.zeros_like(word_vectors).normal_(0.0, self.noise_std)
+
+        batch_size = word_vectors.size(0)
 
         discriminator_left_context = left_context_vectors[:, -self.context_size:, :]
         discriminator_right_context = right_context_vectors[:, :self.context_size, :]

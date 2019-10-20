@@ -42,7 +42,7 @@ noize_words = [gen_word((4, 5)) for i in range(50)] + [''] * 20
 
 contexts = {}
 
-for i in range(100):
+for i in range(10):
     context = (
         random.choice(context_words),
         random.choice(context_words),
@@ -60,7 +60,7 @@ entities = []
 synonyms = []
 
 for context in contexts:
-    synonym_words = random.sample(words, 3)
+    synonym_words = random.sample(words, 2)
     for word in synonym_words:
         entity = (word, *context)
 

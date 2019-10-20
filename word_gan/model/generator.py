@@ -42,9 +42,12 @@ class Generator(Model):
 
         self.accuracy = BooleanAccuracy()
 
+        self.attention_sharpness = Average()
+
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {
             'accuracy': self.accuracy.get_metric(reset),
+            'attention_sharpness': self.attention_sharpness.get_metric(reset)
         }
 
     def forward(
@@ -84,6 +87,9 @@ class Generator(Model):
             variants_mask=variants_mask
         )
 
+        attention_max = synonym_words_score.max(dim=1)[0].mean()
+        self.attention_sharpness(attention_max)
+
         # [batch_size]
         selected_variant_indexes = torch.argmax(synonym_words_score, dim=1)
         target_synonym_indexes = variant_ids.gather(dim=1, index=selected_variant_indexes.unsqueeze(-1)).squeeze()
@@ -108,14 +114,17 @@ class Generator(Model):
                 discriminator_right_context
             )
 
+            discriminator_probs = torch.sigmoid(discriminator_predictions)
+
             # We want to trick discriminator here
             required_predictions = torch.ones_like(discriminator_predictions)
 
-            discriminator_vals = (discriminator_predictions > 0.5).long()
+            discriminator_vals = (discriminator_probs > 0.5).long()
             self.accuracy(discriminator_vals, required_predictions.long())
 
             guess_loss = self.loss(discriminator_predictions, required_predictions)
 
+            result['discriminator_predictions'] = discriminator_predictions
             result['loss'] = guess_loss
 
         return result

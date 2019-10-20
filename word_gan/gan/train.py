@@ -1,13 +1,14 @@
 import logging
 import os
 import sys
+from typing import Tuple
 
 import torch
 from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
-from allennlp.modules import TextFieldEmbedder
+from allennlp.modules import TokenEmbedder, TextFieldEmbedder
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file
+from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file, Embedding
 from allennlp.training.checkpointer import Checkpointer
 from loguru import logger
 from torch import optim
@@ -26,7 +27,7 @@ def load_w2v(
         weights_file,
         vocab,
         namespace='tokens',
-):
+) -> (Embedding, TextFieldEmbedder):
     weights = _read_pretrained_embeddings_file(
         weights_file,
         SETTINGS.EMBEDDINGS_SIZE,
@@ -52,12 +53,39 @@ def load_w2v(
     return token_embedding, word_embeddings
 
 
+def get_model(vocab) -> Tuple[Generator, Discriminator]:
+    w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
+
+    print('target size', vocab.get_vocab_size('target'))
+    print('tokens size', vocab.get_vocab_size('tokens'))
+
+    w2v: (Embedding, TextFieldEmbedder) = load_w2v(
+        weights_file=w2v_model_path,
+        vocab=vocab,
+    )
+
+    w2v_embedding: Embedding = w2v[0]
+    w2v_model: TextFieldEmbedder = w2v[1]
+
+    candidates_selector = AllVocabCandidates(vocab=vocab, w2v=w2v_embedding)
+
+    generator: Generator = Generator(
+        w2v=w2v_model,
+        vocab=vocab,
+        candidates_selector=candidates_selector,
+    )
+
+    discriminator: Discriminator = Discriminator(
+        w2v=w2v_model,
+        vocab=vocab,
+        noise_std=w2v_embedding.weight.std() * 0.05
+    )
+
+    return generator, discriminator
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-
-    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
-    v2w_model_path = os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th')
-    w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
 
     if len(sys.argv) > 1:
         text_data_path = sys.argv[1]
@@ -66,8 +94,7 @@ if __name__ == '__main__':
 
     vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
-    print('target size', vocab.get_vocab_size('target'))
-    print('tokens size', vocab.get_vocab_size('tokens'))
+    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
 
     reader = TextDatasetReader(
         dict_path=freq_dict_path,
@@ -81,27 +108,12 @@ if __name__ == '__main__':
 
     iterator.index_with(vocab)
 
-    w2v_embedding, w2v_model = load_w2v(
-        weights_file=w2v_model_path,
-        vocab=vocab,
-    )
+    models: Tuple[Generator, Discriminator] = get_model(vocab)
 
-    candidates_selector = AllVocabCandidates(vocab=vocab, w2v=w2v_embedding)
+    generator, discriminator = models
 
-    generator: Generator = Generator(
-        w2v=w2v_model,
-        vocab=vocab,
-        candidates_selector=candidates_selector,
-
-    )
-
-    discriminator: Discriminator = Discriminator(
-        w2v=w2v_model,
-        vocab=vocab
-    )
-
-    generator_optimizer = optim.Adam(generator.parameters(), lr=0.01)
-    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.01)
+    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
+    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
 
     if torch.cuda.is_available():
         cuda_device = 0
