@@ -1,7 +1,7 @@
+import h5py
 from allennlp.common import Params
 from allennlp.data import Vocabulary
 from allennlp.modules import Embedding
-from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file
 
 
 class ThriftyEmbedding(Embedding):

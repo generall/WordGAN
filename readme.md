@@ -30,12 +30,3 @@ comm -12 \
 <(cut -f 1 -d ' ' ./data/model.txt | sort ) \
 <(cat ./data/count_1w.txt | cut -f 1 | sort) > ./data/common.txt
 ```
-
-* Normalize embedding matrix
-
-```bash
-NUM_WORDS=100000 \
-MODE='prod' \
-python -m word_gan.word_reconstruction.train
-```
-

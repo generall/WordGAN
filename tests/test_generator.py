@@ -2,7 +2,7 @@ from unittest import TestCase
 import torch
 from allennlp.data import Vocabulary
 
-from word_gan.model.generator import Generator
+from word_gan.gan.generator import Generator
 
 
 class TestGenerator(TestCase):

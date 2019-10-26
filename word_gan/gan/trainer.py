@@ -10,8 +10,8 @@ from loguru import logger
 from torch.optim.optimizer import Optimizer
 
 from word_gan.gan.train_logger import TrainLogger
-from word_gan.model.discriminator import Discriminator
-from word_gan.model.generator import Generator
+from word_gan.gan.discriminator import Discriminator
+from word_gan.gan.generator import Generator
 
 
 def add_prefix(dct: dict, prefix) -> dict:
@@ -67,7 +67,7 @@ class GanTrainer(TrainerBase):
         self._tensorboard = TensorboardWriter(
             get_batch_num_total=lambda: self._batch_num_total,
             serialization_dir=serialization_dir,
-            summary_interval=100,
+            summary_interval=5,
             histogram_interval=None,
             should_log_parameter_statistics=True,
             should_log_learning_rate=False

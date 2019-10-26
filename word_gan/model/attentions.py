@@ -61,7 +61,7 @@ class LinearDotAttention(Attention):
     def __init__(self, vector_dim: int, matrix_dim: int, normalize: bool = True):
         super(LinearDotAttention, self).__init__(normalize)
 
-        self.ll1 = Linear(vector_dim, matrix_dim)
+        self.ll = Linear(vector_dim, matrix_dim)
 
     def _forward_internal(self, vector: torch.Tensor, matrix: torch.Tensor) -> torch.Tensor:
         transformed_vectors = self.ll(vector)

@@ -26,11 +26,20 @@ class SyntheticSettings(BaseSettings):  # used for experiments on a synthetic da
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
 
 
-mode = os.getenv('MODE', 'synthetic')
+class VerbsSettings(BaseSettings):
+    EMBEDDINGS_SIZE = 300
+    DATA_DIR = os.path.join(ROOT_DIR, 'data', 'verbs')
+    VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
+
+
+mode = os.getenv('MODE', 'verbs')
 
 if mode == 'test':
     logger.info("USING TEST SETTINGS")
     settings_class = TestSettings
+elif mode == 'verbs':
+    logger.info("USING VERBS SETTINGS")
+    settings_class = VerbsSettings
 elif mode == 'synthetic':
     logger.info("USING SYNTHETIC SETTINGS")
     settings_class = SyntheticSettings

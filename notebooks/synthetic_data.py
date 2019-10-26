@@ -31,11 +31,11 @@ def gen_word(word_length):
 # In[3]:
 
 
-words = [gen_word((4, 5)) for i in range(25)]
+words = [gen_word((4, 5)) for _ in range(25)]
 
-context_words = [gen_word((4, 5)) for i in range(10)]
+context_words = [gen_word((4, 5)) for _ in range(10)]
 
-noize_words = [gen_word((4, 5)) for i in range(50)] + [''] * 20
+noize_words = [gen_word((4, 5)) for _ in range(50)] + [''] * 20
 
 # In[4]:
 

@@ -1,18 +1,15 @@
-from typing import Dict, Tuple, Optional
+from typing import Dict
 
 import torch
 from allennlp.data import Vocabulary
 from allennlp.models import Model
-from allennlp.modules import TextFieldEmbedder, Attention
-from allennlp.nn import Activation
+from allennlp.modules import TextFieldEmbedder
 from allennlp.training.metrics import Average, BooleanAccuracy
 from torch import nn
-from torch.nn.parameter import Parameter
 
-from word_gan.model.attentions import MultilayerAttention
-from word_gan.model.candidates_selector import CandidatesSelector
-from word_gan.model.discriminator import Discriminator
-from word_gan.model.selection_generator import SelectionGenerator
+from word_gan.gan.candidate_selectors.base_selector import CandidatesSelector
+from word_gan.gan.discriminator import Discriminator
+from word_gan.model.selection_generator import BiLinearSelectionGenerator
 from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
@@ -33,7 +30,7 @@ class Generator(Model):
         self.candidates_selector = candidates_selector
         self.w2v = w2v
 
-        self.selection_generator = SelectionGenerator(w2v.get_output_dim())
+        self.selection_generator = BiLinearSelectionGenerator(w2v.get_output_dim())
 
         self.generator_context_size = 1
         self.discriminator_context_size = Discriminator.context_size
@@ -75,6 +72,7 @@ class Generator(Model):
         generator_left_context = left_context_vectors[:, -self.generator_context_size:, :]
         generator_right_context = right_context_vectors[:, :self.generator_context_size, :]
 
+        # target indexes, variant vectors, variant masks
         # shape: [batch_size, num_variants], [batch_size, num_variants, emb_size], [batch_size, num_variants]
         variant_ids, variants, variants_mask = self.candidates_selector.get_candidates(word)
 

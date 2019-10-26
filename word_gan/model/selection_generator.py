@@ -1,44 +1,27 @@
 from typing import Optional, Tuple
 
 import torch
-from allennlp.modules import FeedForward, Attention
-from allennlp.modules.attention import LinearAttention
+from allennlp.modules import FeedForward, Attention, Seq2VecEncoder
+from allennlp.modules.attention import LinearAttention, BilinearAttention
 from allennlp.nn import Activation
 from allennlp.nn.util import combine_tensors_and_multiply, weighted_sum
 from torch import nn
 
-from word_gan.model.attentions import MultilayerAttention
+from word_gan.model.attentions import MultilayerAttention, LinearDotAttention
 from word_gan.model.multilayer_cnn import MultilayerCnnEncoder
 
 
-class SelectionGenerator(nn.Module):
+class BaseSelectionGenerator(nn.Module):
 
     def __init__(
             self,
-            embedding_dim
+            encoder: Seq2VecEncoder,
+            attention: Attention
     ):
-        super(SelectionGenerator, self).__init__()
+        super(BaseSelectionGenerator, self).__init__()
 
-        self.embedding_dim = embedding_dim
-
-        self.encoder = MultilayerCnnEncoder(
-            embedding_dim=self.embedding_dim,
-            num_filters=self.embedding_dim,
-            layers=2,
-            conv_layer_activation=Activation.by_name('tanh')(),
-            ngram_filter_sizes=(3,),
-            output_dim=self.embedding_dim,
-            pooling='avg'
-        )
-
-        self.attention = MultilayerAttention(
-            vector_dim=self.embedding_dim * 2,
-            matrix_dim=self.embedding_dim,
-            hidden_dims=[self.embedding_dim],
-            activations=[Activation.by_name('tanh')()],
-            dropout=[0.0],
-            normalize=True
-        )
+        self.encoder = encoder
+        self.attention = attention
 
     def forward(
             self,
@@ -82,3 +65,88 @@ class SelectionGenerator(nn.Module):
         selected_variants = weighted_sum(variants, attention_output)
 
         return selected_variants, attention_output
+
+
+class SelectionGenerator(BaseSelectionGenerator):
+
+    """
+    This is the only thing which is actually work on synthetic data
+    """
+
+    def __init__(self, embedding_dim):
+        self.embedding_dim = embedding_dim
+        encoder = MultilayerCnnEncoder(
+            embedding_dim=self.embedding_dim,
+            num_filters=self.embedding_dim,
+            layers=2,
+            conv_layer_activation=Activation.by_name('tanh')(),
+            ngram_filter_sizes=(3,),
+            output_dim=self.embedding_dim,
+            pooling='avg'
+        )
+
+        attention = MultilayerAttention(
+            vector_dim=self.embedding_dim * 2,
+            matrix_dim=self.embedding_dim,
+            hidden_dims=[self.embedding_dim],
+            activations=[Activation.by_name('tanh')()],
+            dropout=[0.0],
+            normalize=True
+        )
+
+        super(SelectionGenerator, self).__init__(
+            encoder=encoder,
+            attention=attention,
+        )
+
+
+class DotSelectionGenerator(BaseSelectionGenerator):
+
+    def __init__(self, embedding_dim):
+        self.embedding_dim = embedding_dim
+        encoder = MultilayerCnnEncoder(
+            embedding_dim=self.embedding_dim,
+            num_filters=self.embedding_dim,
+            layers=2,
+            conv_layer_activation=Activation.by_name('tanh')(),
+            ngram_filter_sizes=(3,),
+            output_dim=self.embedding_dim,
+            pooling='avg'
+        )
+
+        attention = LinearDotAttention(
+            vector_dim=self.embedding_dim * 2,
+            matrix_dim=self.embedding_dim,
+            normalize=True
+        )
+
+        super(DotSelectionGenerator, self).__init__(
+            encoder=encoder,
+            attention=attention,
+        )
+
+
+class BiLinearSelectionGenerator(BaseSelectionGenerator):
+
+    def __init__(self, embedding_dim):
+        self.embedding_dim = embedding_dim
+        encoder = MultilayerCnnEncoder(
+            embedding_dim=self.embedding_dim,
+            num_filters=self.embedding_dim * 2,
+            layers=2,
+            conv_layer_activation=Activation.by_name('tanh')(),
+            ngram_filter_sizes=(3,),
+            output_dim=self.embedding_dim,
+            pooling='avg'
+        )
+
+        attention = BilinearAttention(
+            vector_dim=self.embedding_dim * 2,
+            matrix_dim=self.embedding_dim,
+            normalize=True
+        )
+
+        super(BiLinearSelectionGenerator, self).__init__(
+            encoder=encoder,
+            attention=attention,
+        )

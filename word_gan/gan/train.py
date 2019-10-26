@@ -6,51 +6,19 @@ from typing import Tuple
 import torch
 from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
-from allennlp.modules import TokenEmbedder, TextFieldEmbedder
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.modules.token_embedders.embedding import _read_pretrained_embeddings_file, Embedding
+from allennlp.modules import TextFieldEmbedder
+from allennlp.modules.token_embedders.embedding import Embedding
 from allennlp.training.checkpointer import Checkpointer
-from loguru import logger
 from torch import optim
 
+from word_gan.gan.candidate_selectors.all_selector import AllVocabCandidates
 from word_gan.gan.dataset import TextDatasetReader
+from word_gan.gan.discriminator import Discriminator
+from word_gan.gan.generator import Generator
+from word_gan.gan.helpers.loaders import load_w2v
 from word_gan.gan.train_logger import WordGanLogger
 from word_gan.gan.trainer import GanTrainer
-from word_gan.model.candidates_selector import AllVocabCandidates
-from word_gan.model.discriminator import Discriminator
-from word_gan.model.generator import Generator
-from word_gan.model.thrifty_embeddings import ThriftyEmbedding
 from word_gan.settings import SETTINGS
-
-
-def load_w2v(
-        weights_file,
-        vocab,
-        namespace='tokens',
-) -> (Embedding, TextFieldEmbedder):
-    weights = _read_pretrained_embeddings_file(
-        weights_file,
-        SETTINGS.EMBEDDINGS_SIZE,
-        vocab,
-        namespace=namespace
-    )
-
-    logger.info(f"W2V size: {weights.shape}")
-
-    token_embedding = ThriftyEmbedding(
-        trainable=False,
-        weights_file=weights_file,
-        num_embeddings=vocab.get_vocab_size(namespace),
-        weight=weights,
-        embedding_dim=SETTINGS.EMBEDDINGS_SIZE
-    )
-
-    word_embeddings = BasicTextFieldEmbedder(
-        {"tokens": token_embedding},
-        allow_unmatched_keys=True
-    )
-
-    return token_embedding, word_embeddings
 
 
 def get_model(vocab) -> Tuple[Generator, Discriminator]:
