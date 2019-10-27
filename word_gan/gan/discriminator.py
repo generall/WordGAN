@@ -11,7 +11,7 @@ from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
 class Discriminator(Model):
-    context_size = 2
+    context_size = 3
 
     def __init__(self,
                  w2v: TextFieldEmbedder,

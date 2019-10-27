@@ -37,7 +37,7 @@ class TextDatasetReader(DatasetReader):
 
         return word_dict
 
-    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 2,
+    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 3,
                  token_indexers: Dict[str, TokenIndexer] = None):
         """
 

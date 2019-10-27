@@ -72,7 +72,8 @@ def launch_train(text_data_path):
     reader = TextDatasetReader(
         dict_path=freq_dict_path,
         limit_words=vocab.get_vocab_size('target'),
-        limit_freq=0
+        limit_freq=0,
+        max_context_size=3
     )
 
     train_dataset = reader.read(text_data_path)
