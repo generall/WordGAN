@@ -14,6 +14,7 @@ def load_w2v(
         weights_file,
         vocab,
         namespace='tokens',
+        device=None
 ) -> (Embedding, TextFieldEmbedder):
 
     cache_file = weights_file + '.cache.hd5'
@@ -33,6 +34,9 @@ def load_w2v(
 
         with h5py.File(cache_file, 'w') as f:
             f.create_dataset("embedding", data=weights.numpy())
+
+    if device is not None:
+        weights = weights.cuda(device)
 
     logger.info(f"W2V size: {weights.shape}")
 

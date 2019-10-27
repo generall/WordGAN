@@ -13,7 +13,7 @@ def convert_verbs(path, out_path):
     df = pd.read_csv(path, sep='\t')
 
     with open(out_path, 'w') as out:
-        out.write('@@PADDING@@\n')
+        # out.write('@@PADDING@@\n')
         out.write('@@UNKNOWN@@\n')
 
         for column in df.columns:

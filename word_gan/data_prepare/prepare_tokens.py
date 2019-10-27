@@ -9,7 +9,7 @@ TOKENS_PATH = os.path.join(SETTINGS.VOCAB_PATH, 'tokens.txt')
 
 def extract_tokens_from_model(path, out_path):
     with open(out_path, 'w') as out:
-        out.write('@@PADDING@@\n')
+        # out.write('@@PADDING@@\n')
         out.write('@@UNKNOWN@@\n')
         out.write('EOS\n')
         out.write('BOS\n')

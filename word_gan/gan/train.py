@@ -8,10 +8,11 @@ from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
 from allennlp.modules import TextFieldEmbedder
 from allennlp.modules.token_embedders.embedding import Embedding
+from allennlp.training import util as training_util
 from allennlp.training.checkpointer import Checkpointer
 from torch import optim
 
-from word_gan.gan.candidate_selectors.all_selector import AllVocabCandidates
+from word_gan.gan.candidate_selectors.group_selector import GroupSelector
 from word_gan.gan.dataset import TextDatasetReader
 from word_gan.gan.discriminator import Discriminator
 from word_gan.gan.generator import Generator
@@ -19,10 +20,9 @@ from word_gan.gan.helpers.loaders import load_w2v
 from word_gan.gan.train_logger import WordGanLogger
 from word_gan.gan.trainer import GanTrainer
 from word_gan.settings import SETTINGS
-from allennlp.training import util as training_util
 
 
-def get_model(vocab) -> Tuple[Generator, Discriminator]:
+def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
     w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
 
     print('target size', vocab.get_vocab_size('target'))
@@ -31,12 +31,18 @@ def get_model(vocab) -> Tuple[Generator, Discriminator]:
     w2v: (Embedding, TextFieldEmbedder) = load_w2v(
         weights_file=w2v_model_path,
         vocab=vocab,
+        device=device
     )
 
     w2v_embedding: Embedding = w2v[0]
     w2v_model: TextFieldEmbedder = w2v[1]
 
-    candidates_selector = AllVocabCandidates(vocab=vocab, w2v=w2v_embedding)
+    candidates_selector = GroupSelector(
+        vocab=vocab,
+        w2v=w2v_embedding,
+        groups_file=SETTINGS.CANDIDATE_GROUPS_FILE,
+        device=device
+    )
 
     generator: Generator = Generator(
         w2v=w2v_model,
@@ -53,13 +59,11 @@ def get_model(vocab) -> Tuple[Generator, Discriminator]:
     return generator, discriminator
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-
-    if len(sys.argv) > 1:
-        text_data_path = sys.argv[1]
+def launch_train(text_data_path):
+    if torch.cuda.is_available():
+        cuda_device = 0
     else:
-        text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data.txt')
+        cuda_device = None
 
     vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
@@ -77,16 +81,13 @@ if __name__ == '__main__':
 
     iterator.index_with(vocab)
 
-    models: Tuple[Generator, Discriminator] = get_model(vocab)
+    models: Tuple[Generator, Discriminator] = get_model(vocab, device=cuda_device)
 
     generator, discriminator = models
 
-    if torch.cuda.is_available():
-        cuda_device = 0
+    if cuda_device is not None:
         generator = generator.cuda(cuda_device)
         discriminator = discriminator.cuda(cuda_device)
-    else:
-        cuda_device = -1
 
     generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
     discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
@@ -133,3 +134,14 @@ if __name__ == '__main__':
     )
 
     trainer.train()
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
+    if len(sys.argv) > 1:
+        text_data_path = sys.argv[1]
+    else:
+        text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data.txt')
+
+    launch_train(text_data_path)

@@ -13,11 +13,11 @@ from word_gan.model.embedding_to_word import EmbeddingToWord
 
 from word_gan.word_reconstruction.dataset import DictDatasetReader
 
-os.environ['MODE'] = 'verbs'
+os.environ['MODE'] = 'synthetic'
 
 from word_gan.settings import SETTINGS
 
-NAMESPACE = 'tokens'
+NAMESPACE = 'target'
 EMBEDDING_DIM = SETTINGS.EMBEDDINGS_SIZE
 DEFAULT_EMBEDDING_PATH = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
 OUT_MODEL_PATH = os.getenv("OUT_MODEL_PATH", os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th'))
@@ -49,6 +49,6 @@ if __name__ == '__main__':
     reader = DictDatasetReader(limit_words=NUM_WORDS, namespace=NAMESPACE)
     train_dataset = reader.read(INIT_VOCAB_PATH)
 
-    vocab = Vocabulary.from_instances(train_dataset, non_padded_namespaces=[NAMESPACE])
+    vocab = Vocabulary.from_instances(train_dataset, non_padded_namespaces=[])
 
     vocab.save_to_files(OUT_VOCAB_PATH)

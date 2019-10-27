@@ -12,6 +12,7 @@ class BaseSettings:
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
     EMBEDDINGS_SIZE = 300
     BATCH_SIZE = 64
+    CANDIDATE_GROUPS_FILE = None
 
 
 class TestSettings(BaseSettings):
@@ -24,12 +25,14 @@ class SyntheticSettings(BaseSettings):  # used for experiments on a synthetic da
     EMBEDDINGS_SIZE = 20
     DATA_DIR = os.path.join(ROOT_DIR, 'data', 'synthetic')
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
+    CANDIDATE_GROUPS_FILE = os.path.join(VOCAB_PATH, 'target.txt')
 
 
 class VerbsSettings(BaseSettings):
     EMBEDDINGS_SIZE = 300
     DATA_DIR = os.path.join(ROOT_DIR, 'data', 'verbs')
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
+    CANDIDATE_GROUPS_FILE = os.path.join(DATA_DIR, 'verbs.txt')
 
 
 mode = os.getenv('MODE', 'verbs')

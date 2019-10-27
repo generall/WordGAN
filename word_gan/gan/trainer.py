@@ -42,7 +42,7 @@ class GanTrainer(TrainerBase):
         :param cuda_device:
         :param max_batches: max batches per epoch
         """
-        super().__init__(serialization_dir, cuda_device)
+        super().__init__(serialization_dir, cuda_device if cuda_device is not None else -1)
 
         self.discriminator_checkpointer = discriminator_checkpointer
         self.generator_checkpointer = generator_checkpointer
