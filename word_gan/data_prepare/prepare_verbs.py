@@ -16,10 +16,15 @@ def convert_verbs(path, out_path):
         # out.write('@@PADDING@@\n')
         out.write('@@UNKNOWN@@\n')
 
+        all_words = set()
+
         for column in df.columns:
             for word in df[column]:
-                out.write(word)
-                out.write('\n')
+                all_words.add(word)
+
+        for word in all_words:
+            out.write(word)
+            out.write('\n')
 
 
 if __name__ == '__main__':

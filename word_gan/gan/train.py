@@ -67,11 +67,11 @@ def launch_train(text_data_path):
 
     vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
-    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
+    synonym_words_path = os.path.join(SETTINGS.VOCAB_PATH, 'target.txt')
 
     reader = TextDatasetReader(
-        dict_path=freq_dict_path,
-        limit_words=vocab.get_vocab_size('target'),
+        dict_path=synonym_words_path,
+        limit_words=-1,
         limit_freq=0,
         max_context_size=3
     )

@@ -14,6 +14,8 @@ class TestGroupSelector(TestCase):
     def test_get_candidates(self):
         vocab = Vocabulary.from_files(VerbsSettings.VOCAB_PATH)
 
+        self.assertIsNotNone(vocab.get_token_index('imbibing', namespace='target'))
+
         logger.info("Vocab loaded")
 
         w2v, _ = load_w2v(
