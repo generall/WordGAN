@@ -12,6 +12,7 @@ from torch.optim.optimizer import Optimizer
 from word_gan.gan.train_logger import TrainLogger
 from word_gan.gan.discriminator import Discriminator
 from word_gan.gan.generator import Generator
+from allennlp.nn import util
 
 
 def add_prefix(dct: dict, prefix) -> dict:
@@ -140,6 +141,8 @@ class GanTrainer(TrainerBase):
         for batch in tqdm.tqdm(data_iterator):
             # Train discriminator while it has quotas.
             # When it's empty, assign quotas to generator
+
+            batch = util.move_to_device(batch, self._cuda_devices[0])
 
             self._batch_num_total += 1
             if discriminator_quota > 0:

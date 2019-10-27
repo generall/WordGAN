@@ -19,6 +19,7 @@ from word_gan.gan.helpers.loaders import load_w2v
 from word_gan.gan.train_logger import WordGanLogger
 from word_gan.gan.trainer import GanTrainer
 from word_gan.settings import SETTINGS
+from allennlp.training import util as training_util
 
 
 def get_model(vocab) -> Tuple[Generator, Discriminator]:
@@ -80,15 +81,18 @@ if __name__ == '__main__':
 
     generator, discriminator = models
 
-    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
-    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
-
     if torch.cuda.is_available():
         cuda_device = 0
         generator = generator.cuda(cuda_device)
         discriminator = discriminator.cuda(cuda_device)
     else:
         cuda_device = -1
+
+    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
+    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
+
+    training_util.move_optimizer_to_cuda(generator_optimizer)
+    training_util.move_optimizer_to_cuda(discriminator_optimizer)
 
     serialization_dir = os.path.join(SETTINGS.DATA_DIR, 'serialization')
 
