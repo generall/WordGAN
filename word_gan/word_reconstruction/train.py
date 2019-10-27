@@ -42,6 +42,7 @@ def build_v2w(vocab):
     torch.save(v2w.state_dict(), OUT_MODEL_PATH)
 
 
+# WARN: Deprecated
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
