@@ -17,7 +17,7 @@ os.environ['MODE'] = 'verbs'
 
 from word_gan.settings import SETTINGS
 
-NAMESPACE = 'target'
+NAMESPACE = 'tokens'
 EMBEDDING_DIM = SETTINGS.EMBEDDINGS_SIZE
 DEFAULT_EMBEDDING_PATH = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
 OUT_MODEL_PATH = os.getenv("OUT_MODEL_PATH", os.path.join(SETTINGS.DATA_DIR, 'v2w_model.th'))

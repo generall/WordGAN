@@ -16,6 +16,11 @@ ELMo, BERT and other context embeddings could not be used in this configuration
 * **Train corpora** - large text collection to train on.
 
 
+```bash
+
+```
+
+
 ## Build v2w vectors
 
 We need reverse w2v for generator. 
