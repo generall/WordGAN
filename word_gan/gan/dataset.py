@@ -76,8 +76,6 @@ class TextDatasetReader(DatasetReader):
         if len(right_context) < self.max_context_size:
             right_context = right_context + [self.right_padding]
 
-        print(left_context, target_word, right_context)
-
         left_context = TextField([Token(token) for token in left_context], self.token_indexers)
         right_context = TextField([Token(token) for token in right_context], self.token_indexers)
 
