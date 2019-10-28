@@ -5,4 +5,4 @@ loguru
 torch==1.2.0
 pandas
 numpy
-overrides==1.9.0
+overrides==2.2.0

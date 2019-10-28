@@ -1,3 +1,4 @@
+import itertools
 import os
 from typing import Iterable, Dict
 
@@ -65,6 +66,7 @@ class TextDatasetReader(DatasetReader):
         self.right_padding = 'EOS'
 
     def text_to_instance(self, tokens, idx) -> Instance:
+
         target_word = tokens[idx]
 
         left_context, right_context = self.get_context(tokens, idx, self.max_context_size)
@@ -74,10 +76,13 @@ class TextDatasetReader(DatasetReader):
         if len(right_context) < self.max_context_size:
             right_context = right_context + [self.right_padding]
 
+        print(left_context, target_word, right_context)
+
         left_context = TextField([Token(token) for token in left_context], self.token_indexers)
         right_context = TextField([Token(token) for token in right_context], self.token_indexers)
 
         target_token_field = TextField([Token(target_word)], self.target_indexer)
+
 
         return Instance({
             "left_context": left_context,
@@ -112,7 +117,7 @@ class TextDatasetReader(DatasetReader):
 
 
 if __name__ == '__main__':
-    freq_dict_path = os.path.join(SETTINGS.DATA_DIR, 'common.txt')
+    freq_dict_path = os.path.join(SETTINGS.VOCAB_PATH, 'target.txt')
 
     vocab = Vocabulary.from_files(SETTINGS.VOCAB_PATH)
 
@@ -125,15 +130,19 @@ if __name__ == '__main__':
         limit_freq=0
     )
 
-    text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data_sample.txt')
+    text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data.txt')
 
     train_dataset = reader.read(text_data_path)
 
-    iterator = BasicIterator(batch_size=SETTINGS.BATCH_SIZE)
+    iterator = BasicIterator(batch_size=4)
 
     iterator.index_with(vocab)
 
     data_iterator = iterator(train_dataset, num_epochs=1)
 
-    for idx, batch in enumerate(data_iterator):
+    for idx, batch in itertools.islice(enumerate(data_iterator), 1):
         print(idx)
+
+        print(batch['left_context']['tokens'])
+        print(batch['word']['tokens'])
+        print(batch['right_context']['tokens'])

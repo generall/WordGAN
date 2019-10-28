@@ -77,7 +77,7 @@ class SelectionGenerator(BaseSelectionGenerator):
         self.embedding_dim = embedding_dim
         encoder = MultilayerCnnEncoder(
             embedding_dim=self.embedding_dim,
-            num_filters=self.embedding_dim,
+            num_filters=self.embedding_dim * 2,
             layers=2,
             conv_layer_activation=Activation.by_name('tanh')(),
             ngram_filter_sizes=(3,),

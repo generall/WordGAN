@@ -30,7 +30,7 @@ class Discriminator(Model):
             BooleanAccuracy(),
             BooleanAccuracy()
         ]
-
+    
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         return {
             'accuracy_0': self.accuracy[0].get_metric(reset),
