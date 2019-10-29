@@ -38,7 +38,7 @@ class TextDatasetReader(DatasetReader):
 
         return word_dict
 
-    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 3,
+    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 4,
                  token_indexers: Dict[str, TokenIndexer] = None):
         """
 
@@ -80,7 +80,6 @@ class TextDatasetReader(DatasetReader):
         right_context = TextField([Token(token) for token in right_context], self.token_indexers)
 
         target_token_field = TextField([Token(target_word)], self.target_indexer)
-
 
         return Instance({
             "left_context": left_context,

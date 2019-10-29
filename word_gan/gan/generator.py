@@ -9,7 +9,7 @@ from torch import nn
 
 from word_gan.gan.candidate_selectors.base_selector import CandidatesSelector
 from word_gan.gan.discriminator import Discriminator
-from word_gan.model.selection_generator import BiLinearSelectionGenerator, SelectionGenerator
+from word_gan.model.selection_generator import SelectionGenerator
 from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
@@ -32,7 +32,7 @@ class Generator(Model):
 
         self.selection_generator = SelectionGenerator(w2v.get_output_dim())
 
-        self.generator_context_size = 1
+        self.generator_context_size = 2
         self.discriminator_context_size = Discriminator.context_size
 
         self.loss = nn.BCEWithLogitsLoss()

@@ -39,7 +39,7 @@ class GroupSelector(CandidatesSelector):
 
         self.target_indexes = torch.arange(self.target_size, dtype=torch.long, device=self.w2v.weight.device)
 
-        # shape: [1, vocab_size, embedding_size]
+        # shape: [vocab_size, embedding_size]
         self.target_vectors = self.w2v.weight[target_to_tokens]
 
     @classmethod
