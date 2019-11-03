@@ -29,7 +29,7 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
     token_fasttext_path = os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model')
     token_fasttext_params_path = os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model.params')
 
-    target_w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'verbs_vectors.txt')
+    target_w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'target_vectors.txt')
 
     print('target size', vocab.get_vocab_size('target'))
     print('tokens size', vocab.get_vocab_size('tokens'))

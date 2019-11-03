@@ -21,12 +21,6 @@ ELMo, BERT and other context embeddings could not be used in this configuration
 
 ```
 
-
-## Build w2v model for target words
-
-* [colab](https://colab.research.google.com/drive/13WvFNsfPK28_gKLlDbLgofMnjj_Yp3Se)
-
-
 ## Train model with downloading all dependencies
 
 * [colab](https://colab.research.google.com/drive/1E6zvwg5-Z8EG7S6KxcrwGxAGzJtDUgJ2)
