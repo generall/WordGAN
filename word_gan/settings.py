@@ -32,7 +32,7 @@ class SyntheticSettings(BaseSettings):  # used for experiments on a synthetic da
 
 class VerbsSettings(BaseSettings):
     GENERATOR_CONTEXT = 2
-    MAX_CONTEXT_SIZE = 4
+    MAX_CONTEXT_SIZE = 3
     EMBEDDINGS_SIZE = 300
     DATA_DIR = os.path.join(ROOT_DIR, 'data', 'verbs')
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
