@@ -87,7 +87,7 @@ class FastTextTokenEmbedder(TokenEmbedder):
 
     def forward(self, indexes: torch.Tensor, lengths: torch.Tensor, mask: torch.Tensor):
         # 1D Tensor
-        raw_indexes = torch.masked_select(indexes, mask.byte())
+        raw_indexes = torch.masked_select(indexes, mask.bool())
 
         original_size = lengths.size()
 
