@@ -137,8 +137,8 @@ def launch_train(text_data_path):
         generator = generator.cuda(cuda_device)
         discriminator = discriminator.cuda(cuda_device)
 
-    generator_optimizer = optim.Adam(generator.parameters(), lr=0.005)
-    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.005)
+    generator_optimizer = optim.Adam(generator.parameters(), lr=0.001)
+    discriminator_optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
 
     training_util.move_optimizer_to_cuda(generator_optimizer)
     training_util.move_optimizer_to_cuda(discriminator_optimizer)
