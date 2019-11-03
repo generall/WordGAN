@@ -18,10 +18,10 @@ class TestGroupSelector(TestCase):
 
         logger.info("Vocab loaded")
 
-        w2v, _ = load_w2v(
-            weights_file=os.path.join(VerbsSettings.DATA_DIR, 'model.txt'),
+        w2v = load_w2v(
+            weights_file=os.path.join(VerbsSettings.DATA_DIR, 'target_vectors.txt'),
             vocab=vocab,
-            namespace='tokens'
+            namespace='target'
         )
 
         logger.info("w2v loaded")
