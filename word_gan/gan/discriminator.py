@@ -20,6 +20,7 @@ class Discriminator(Model):
                  ):
         super().__init__(vocab)
 
+        self.context_size = context_size
         self.noise_std = noise_std
 
         self.text_embedder = text_embedder

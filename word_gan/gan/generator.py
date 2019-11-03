@@ -20,7 +20,8 @@ class Generator(Model):
             text_embedder: TextFieldEmbedder,
             vocab: Vocabulary,
             candidates_selector: CandidatesSelector,
-            generator_context_size = 2
+            generator_context_size=2,
+            discriminator_context_size=4
     ):
         """
 
@@ -34,7 +35,7 @@ class Generator(Model):
         self.selection_generator = SelectionGenerator(text_embedder.get_output_dim())
 
         self.generator_context_size = generator_context_size
-        self.discriminator_context_size = Discriminator.context_size
+        self.discriminator_context_size = discriminator_context_size
 
         self.loss = nn.BCEWithLogitsLoss()
 

@@ -76,7 +76,8 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
         text_embedder=text_field_embedder,
         vocab=vocab,
         candidates_selector=candidates_selector,
-        generator_context_size=SETTINGS.GENERATOR_CONTEXT
+        generator_context_size=SETTINGS.GENERATOR_CONTEXT,
+        discriminator_context_size=SETTINGS.MAX_CONTEXT_SIZE
     )
 
     discriminator: Discriminator = Discriminator(
