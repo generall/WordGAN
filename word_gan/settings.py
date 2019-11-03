@@ -13,6 +13,8 @@ class BaseSettings:
     EMBEDDINGS_SIZE = 300
     BATCH_SIZE = 64
     CANDIDATE_GROUPS_FILE = None
+    GENERATOR_CONTEXT = 1
+    MAX_CONTEXT_SIZE = 2
 
 
 class TestSettings(BaseSettings):
@@ -29,6 +31,8 @@ class SyntheticSettings(BaseSettings):  # used for experiments on a synthetic da
 
 
 class VerbsSettings(BaseSettings):
+    GENERATOR_CONTEXT = 2
+    MAX_CONTEXT_SIZE = 4
     EMBEDDINGS_SIZE = 300
     DATA_DIR = os.path.join(ROOT_DIR, 'data', 'verbs')
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')

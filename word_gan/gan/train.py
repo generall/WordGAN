@@ -76,12 +76,14 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
         text_embedder=text_field_embedder,
         vocab=vocab,
         candidates_selector=candidates_selector,
+        generator_context_size=SETTINGS.GENERATOR_CONTEXT
     )
 
     discriminator: Discriminator = Discriminator(
         text_embedder=text_field_embedder,
         vocab=vocab,
-        noise_std=target_w2v_embedding.weight.std() * 0.05
+        noise_std=target_w2v_embedding.weight.std() * 0.05,
+        context_size=SETTINGS.MAX_CONTEXT_SIZE
     )
 
     return generator, discriminator
@@ -107,7 +109,7 @@ def launch_train(text_data_path):
         dict_path=synonym_words_path,
         limit_words=-1,
         limit_freq=0,
-        max_context_size=3,
+        max_context_size=SETTINGS.MAX_CONTEXT_SIZE,
         token_indexers={
             "tokens": fasttext_indexer
         },

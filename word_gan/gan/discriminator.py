@@ -11,12 +11,12 @@ from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
 
 class Discriminator(Model):
-    context_size = 4
 
     def __init__(self,
                  text_embedder: TextFieldEmbedder,
                  vocab: Vocabulary,
                  noise_std=None,
+                 context_size=3
                  ):
         super().__init__(vocab)
 
