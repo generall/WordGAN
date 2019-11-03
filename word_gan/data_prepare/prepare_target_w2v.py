@@ -22,7 +22,7 @@ def create_w2v_from_fasttext(
     with open(w2v_out_path, 'w') as out:
         out.write(f"{len(vocab)} {model.vector_size}\n")
         for word in vocab:
-            word_vector_txt = ' '.join(map(str, model['test']))
+            word_vector_txt = ' '.join(map(str, model[word]))
             out.write(f"{word} {word_vector_txt}\n")
 
 
