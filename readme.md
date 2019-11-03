@@ -14,7 +14,7 @@ ELMo, BERT and other context embeddings could not be used in this configuration
     * First 100_000 of Peter Norvig's compilation of the [1/3 million most frequent English words](http://norvig.com/ngrams/count_1w.txt).
     
 * **Train corpora** - large text collection to train on.
-* 
+    * For example [wikitext-103](https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-103-v1.zip)   
 
 
 ```bash
@@ -22,17 +22,12 @@ ELMo, BERT and other context embeddings could not be used in this configuration
 ```
 
 
-## Build v2w vectors
+## Build w2v model for target words
 
-We need reverse w2v for generator. 
-We can do it by normalizing word embeddings.
+* [colab](https://colab.research.google.com/drive/13WvFNsfPK28_gKLlDbLgofMnjj_Yp3Se)
 
-Use following command:
 
-* Build list of top-frequent words, presenting in word2vec
+## Train model with downloading all dependencies
 
-```bash
-comm -12 \
-<(cut -f 1 -d ' ' ./data/model.txt | sort ) \
-<(cat ./data/count_1w.txt | cut -f 1 | sort) > ./data/common.txt
-```
+* [colab](https://colab.research.google.com/drive/1E6zvwg5-Z8EG7S6KxcrwGxAGzJtDUgJ2)
+

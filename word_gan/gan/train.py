@@ -6,7 +6,9 @@ from typing import Tuple
 import torch
 from allennlp.data import Vocabulary
 from allennlp.data.iterators import BasicIterator
-from allennlp.modules import TextFieldEmbedder
+from allennlp.data.token_indexers import SingleIdTokenIndexer
+from allennlp.modules import TextFieldEmbedder, TokenEmbedder
+from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.modules.token_embedders.embedding import Embedding
 from allennlp.training import util as training_util
 from allennlp.training.checkpointer import Checkpointer
@@ -15,45 +17,71 @@ from torch import optim
 from word_gan.gan.candidate_selectors.group_selector import GroupSelector
 from word_gan.gan.dataset import TextDatasetReader
 from word_gan.gan.discriminator import Discriminator
+from word_gan.gan.fasttext_indexer import StaticFasttextTokenIndexer
 from word_gan.gan.generator import Generator
-from word_gan.gan.helpers.loaders import load_w2v
+from word_gan.gan.helpers.loaders import load_w2v, load_fasttext
 from word_gan.gan.train_logger import WordGanLogger
 from word_gan.gan.trainer import GanTrainer
 from word_gan.settings import SETTINGS
 
 
 def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
-    w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'model.txt')
+    token_fasttext_path = os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model')
+    token_fasttext_params_path = os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model.params')
+
+    target_w2v_model_path = os.path.join(SETTINGS.DATA_DIR, 'verbs_vectors.txt')
 
     print('target size', vocab.get_vocab_size('target'))
     print('tokens size', vocab.get_vocab_size('tokens'))
 
-    w2v: (Embedding, TextFieldEmbedder) = load_w2v(
-        weights_file=w2v_model_path,
+    target_w2v_embedding: Embedding = load_w2v(
+        weights_file=target_w2v_model_path,
         vocab=vocab,
-        device=device
+        device=device,
+        namespace='target'
     )
 
-    w2v_embedding: Embedding = w2v[0]
-    w2v_model: TextFieldEmbedder = w2v[1]
+    on_disk = False
+
+    token_fasttext_embedding: TokenEmbedder = load_fasttext(
+        model_path=token_fasttext_path,
+        model_params_path=token_fasttext_params_path,
+        vocab=vocab,
+        namespace='tokens',
+        on_disk=on_disk
+    )
+
+    text_field_embedder = BasicTextFieldEmbedder(
+        token_embedders={
+            "tokens-ngram": token_fasttext_embedding
+        },
+        embedder_to_indexer_map={
+            "tokens-ngram": [
+                "tokens-ngram",
+                "tokens-ngram-lengths",
+                "tokens-ngram-mask"
+            ] if not on_disk else ['tokens']
+        },
+        allow_unmatched_keys=True
+    )
 
     candidates_selector = GroupSelector(
         vocab=vocab,
-        w2v=w2v_embedding,
+        target_w2v=target_w2v_embedding,
         groups_file=SETTINGS.CANDIDATE_GROUPS_FILE,
         device=device
     )
 
     generator: Generator = Generator(
-        w2v=w2v_model,
+        text_embedder=text_field_embedder,
         vocab=vocab,
         candidates_selector=candidates_selector,
     )
 
     discriminator: Discriminator = Discriminator(
-        w2v=w2v_model,
+        text_embedder=text_field_embedder,
         vocab=vocab,
-        noise_std=w2v_embedding.weight.std() * 0.05
+        noise_std=target_w2v_embedding.weight.std() * 0.05
     )
 
     return generator, discriminator
@@ -69,11 +97,27 @@ def launch_train(text_data_path):
 
     synonym_words_path = os.path.join(SETTINGS.VOCAB_PATH, 'target.txt')
 
+    fasttext_indexer = StaticFasttextTokenIndexer(
+        model_path=os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model'),
+        namespace='tokens',
+        lowercase_tokens=True
+    )
+
     reader = TextDatasetReader(
         dict_path=synonym_words_path,
         limit_words=-1,
         limit_freq=0,
-        max_context_size=3
+        max_context_size=3,
+        token_indexers={
+            "tokens": fasttext_indexer
+        },
+        target_indexers={
+            "tokens": fasttext_indexer,
+            "target": SingleIdTokenIndexer(
+                namespace='target',
+                lowercase_tokens=True
+            )
+        },
     )
 
     train_dataset = reader.read(text_data_path)

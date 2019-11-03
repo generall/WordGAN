@@ -8,6 +8,7 @@ from allennlp.data.iterators import BasicIterator
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from nltk.tokenize import WordPunctTokenizer
 
+from word_gan.gan.fasttext_indexer import StaticFasttextTokenIndexer
 from word_gan.settings import SETTINGS
 
 
@@ -38,8 +39,15 @@ class TextDatasetReader(DatasetReader):
 
         return word_dict
 
-    def __init__(self, dict_path, limit_words=-1, limit_freq=0, max_context_size: int = 4,
-                 token_indexers: Dict[str, TokenIndexer] = None):
+    def __init__(
+            self,
+            dict_path,
+            limit_words=-1,
+            limit_freq=0,
+            max_context_size: int = 4,
+            token_indexers: Dict[str, TokenIndexer] = None,
+            target_indexers: Dict[str, TokenIndexer] = None
+    ):
         """
 
         :param dict_path: path to the dict of acceptable fords to change
@@ -54,7 +62,7 @@ class TextDatasetReader(DatasetReader):
         self.tokenizer = WordPunctTokenizer()
         self.token_indexers = token_indexers or {"tokens": SingleIdTokenIndexer()}
 
-        self.target_indexer = {
+        self.target_indexer = target_indexers or {
             "target": SingleIdTokenIndexer(
                 namespace='target',
                 lowercase_tokens=True
@@ -121,10 +129,27 @@ if __name__ == '__main__':
     print('target size', vocab.get_vocab_size('target'))
     print('tokens size', vocab.get_vocab_size('tokens'))
 
+    fasttext_indexer = StaticFasttextTokenIndexer(
+        model_path=os.path.join(SETTINGS.DATA_DIR, 'shrinked_fasttext.model'),
+        namespace='tokens',
+        lowercase_tokens=True
+    )
+
     reader = TextDatasetReader(
         dict_path=freq_dict_path,
-        limit_words=vocab.get_vocab_size('target'),
-        limit_freq=0
+        limit_words=-1,
+        limit_freq=0,
+        max_context_size=3,
+        token_indexers={
+            "tokens": fasttext_indexer
+        },
+        target_indexers={
+            "tokens": fasttext_indexer,
+            "target": SingleIdTokenIndexer(
+                namespace='target',
+                lowercase_tokens=True
+            )
+        },
     )
 
     text_data_path = os.path.join(SETTINGS.DATA_DIR, 'train_data.txt')

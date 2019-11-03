@@ -17,7 +17,7 @@ class Generator(Model):
 
     def __init__(
             self,
-            w2v: TextFieldEmbedder,
+            text_embedder: TextFieldEmbedder,
             vocab: Vocabulary,
             candidates_selector: CandidatesSelector
     ):
@@ -28,9 +28,9 @@ class Generator(Model):
         super().__init__(vocab)
 
         self.candidates_selector = candidates_selector
-        self.w2v = w2v
+        self.text_embedder = text_embedder
 
-        self.selection_generator = SelectionGenerator(w2v.get_output_dim())
+        self.selection_generator = SelectionGenerator(text_embedder.get_output_dim())
 
         self.generator_context_size = 2
         self.discriminator_context_size = Discriminator.context_size
@@ -63,11 +63,11 @@ class Generator(Model):
         """
 
         # shape: [batch_size, context_size, embedding_size]
-        left_context_vectors = self.w2v(left_context)
-        right_context_vectors = self.w2v(right_context)
+        left_context_vectors = self.text_embedder(left_context)
+        right_context_vectors = self.text_embedder(right_context)
 
         # shape: [batch_size, embedding_dim]
-        word_vectors = self.w2v(word).squeeze(1)
+        word_vectors = self.text_embedder(word).squeeze(1)
 
         generator_left_context = left_context_vectors[:, -self.generator_context_size:, :]
         generator_right_context = right_context_vectors[:, :self.generator_context_size, :]

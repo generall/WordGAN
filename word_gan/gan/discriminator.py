@@ -14,7 +14,7 @@ class Discriminator(Model):
     context_size = 4
 
     def __init__(self,
-                 w2v: TextFieldEmbedder,
+                 text_embedder: TextFieldEmbedder,
                  vocab: Vocabulary,
                  noise_std=None,
                  ):
@@ -22,8 +22,8 @@ class Discriminator(Model):
 
         self.noise_std = noise_std
 
-        self.w2v = w2v
-        self.synonym_discriminator = SynonymDiscriminator(w2v.get_output_dim())
+        self.text_embedder = text_embedder
+        self.synonym_discriminator = SynonymDiscriminator(text_embedder.get_output_dim())
         self.loss = nn.BCEWithLogitsLoss()
 
         self.accuracy = [
@@ -71,12 +71,12 @@ class Discriminator(Model):
         """
 
         # shape: [batch_size, context_size, embedding_size]
-        left_context_vectors = self.w2v(left_context)
-        right_context_vectors = self.w2v(right_context)
+        left_context_vectors = self.text_embedder(left_context)
+        right_context_vectors = self.text_embedder(right_context)
 
         if word_vectors is None:
             # shape: [batch_size, embedding_dim]
-            word_vectors: torch.Tensor = self.w2v(word).squeeze(1)
+            word_vectors: torch.Tensor = self.text_embedder(word).squeeze(1)
 
         if self.noise_std:
             word_vectors += torch.zeros_like(word_vectors).normal_(0.0, self.noise_std)

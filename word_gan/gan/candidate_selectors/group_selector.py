@@ -15,11 +15,11 @@ class GroupSelector(CandidatesSelector):
     all other group members are candidates for prediction
     """
 
-    def __init__(self, vocab: Vocabulary, w2v: Embedding, groups_file: str, device=None):
-        self.w2v = w2v
+    def __init__(self, vocab: Vocabulary, target_w2v: Embedding, groups_file: str, device=None):
+        self.target_w2v = target_w2v
         self.vocab = vocab
 
-        self.groups = self.load_columns(groups_file, device or self.w2v.weight.device)
+        self.groups = self.load_columns(groups_file, device or self.target_w2v.weight.device)
 
         # Mapping target_id -> candidate_ids
         # Shape: [target_size, groups_size]
@@ -33,14 +33,6 @@ class GroupSelector(CandidatesSelector):
         ])
 
         self.target_size = self.vocab.get_vocab_size("target")
-
-        # shape: [target_vocab_size]
-        target_to_tokens = self._build_mapping(vocab, 'target', 'tokens').to(device=self.w2v.weight.device)
-
-        self.target_indexes = torch.arange(self.target_size, dtype=torch.long, device=self.w2v.weight.device)
-
-        # shape: [vocab_size, embedding_size]
-        self.target_vectors = self.w2v.weight[target_to_tokens]
 
     @classmethod
     def get_empty_variants(cls, variants_size, device, padding_idx):
@@ -116,7 +108,7 @@ class GroupSelector(CandidatesSelector):
         mask = mask & (candidate_ids != original_target_ids.unsqueeze(-1)).long()
 
         # shape: [batch_size, num_variants, emb_size]
-        candidate_vectors = self.target_vectors[candidate_ids]
+        candidate_vectors = self.target_w2v(candidate_ids)
 
         return (
             candidate_ids,

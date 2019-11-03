@@ -28,7 +28,7 @@ class TestGroupSelector(TestCase):
 
         selector = GroupSelector(
             vocab=vocab,
-            w2v=w2v,
+            target_w2v=w2v,
             groups_file=os.path.join(VerbsSettings.DATA_DIR, 'verbs.txt')
         )
 
