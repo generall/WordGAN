@@ -170,7 +170,6 @@ class GanTrainer(TrainerBase):
                 discriminator_fake_loss += fake_error.sum().item()
 
                 self.discriminator_optimizer.step()
-                print('discriminator_optimizer.step')
                 discriminator_quota -= 1
 
             elif generator_quota > 0:
@@ -184,7 +183,6 @@ class GanTrainer(TrainerBase):
                 generator_loss += fake_error.sum().item()
 
                 self.generator_optimizer.step()
-                print('generator_optimizer.step')
 
                 if self.train_logger:
                     self.train_logger.log_info(batch, generated, self._batch_num_total)
