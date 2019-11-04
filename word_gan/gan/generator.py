@@ -3,9 +3,11 @@ from typing import Dict
 import torch
 from allennlp.data import Vocabulary
 from allennlp.models import Model
-from allennlp.modules import TextFieldEmbedder
+from allennlp.modules import TextFieldEmbedder, Embedding
+from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.training.metrics import Average, BooleanAccuracy
 from torch import nn
+from torch.nn import Linear
 
 from word_gan.gan.candidate_selectors.base_selector import CandidatesSelector
 from word_gan.gan.discriminator import Discriminator
@@ -21,13 +23,33 @@ class Generator(Model):
             vocab: Vocabulary,
             candidates_selector: CandidatesSelector,
             generator_context_size=2,
-            discriminator_context_size=4
+            discriminator_context_size=4,
+            additional_embedding_dim=20
     ):
         """
 
         :param vocab:
         """
         super().__init__(vocab)
+
+        self.target_additional_embedding = Embedding(
+            num_embeddings=vocab.get_vocab_size('target'),
+            embedding_dim=additional_embedding_dim,
+            vocab_namespace='target'
+        )
+
+        self.additional_embedder = BasicTextFieldEmbedder(
+            token_embedders={
+                'target': self.target_additional_embedding
+            },
+            embedder_to_indexer_map={'target': ['target']},
+            allow_unmatched_keys=True
+        )
+
+        self.projection = Linear(
+            in_features=text_embedder.get_output_dim() + additional_embedding_dim,
+            out_features=text_embedder.get_output_dim()
+        )
 
         self.candidates_selector = candidates_selector
         self.text_embedder = text_embedder
@@ -70,6 +92,12 @@ class Generator(Model):
 
         # shape: [batch_size, embedding_dim]
         word_vectors = self.text_embedder(word).squeeze(1)
+
+        # shape: [batch_size, additional_embedding_dim]
+        additional_vectors = self.additional_embedder(word).squeeze(1)
+
+        # shape: [batch_size, embedding_dim]
+        word_vectors = self.projection(torch.cat([word_vectors, additional_vectors], dim=1))
 
         generator_left_context = left_context_vectors[:, -self.generator_context_size:, :]
         generator_right_context = right_context_vectors[:, :self.generator_context_size, :]
@@ -128,4 +156,3 @@ class Generator(Model):
             result['loss'] = guess_loss
 
         return result
-
