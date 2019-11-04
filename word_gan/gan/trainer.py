@@ -204,6 +204,10 @@ class GanTrainer(TrainerBase):
                     **add_prefix(generator_metrics, 'batch_generator'),
                 }
 
+                generator_loss = 0.0
+                discriminator_real_loss = 0.0
+                discriminator_fake_loss = 0.0
+
                 self._tensorboard.log_metrics(train_metrics=metrics, epoch=None, log_to_console=False)
 
         discriminator_metrics = self.discriminator.get_metrics(reset=True)
