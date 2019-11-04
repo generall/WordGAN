@@ -31,7 +31,7 @@ class GanTrainer(TrainerBase):
                  discriminator_checkpointer: Checkpointer,
                  batch_iterator: DataIterator,
                  cuda_device: Union[int, List] = -1,
-                 max_batches: int = 100,
+                 max_batches: int = 5,  # ToDo: fix this
                  num_epochs: int = 10,
                  train_logger: Optional[TrainLogger] = None,
                  ) -> None:
@@ -170,6 +170,7 @@ class GanTrainer(TrainerBase):
                 discriminator_fake_loss += fake_error.sum().item()
 
                 self.discriminator_optimizer.step()
+                print('discriminator_optimizer.step')
                 discriminator_quota -= 1
 
             elif generator_quota > 0:
@@ -183,6 +184,7 @@ class GanTrainer(TrainerBase):
                 generator_loss += fake_error.sum().item()
 
                 self.generator_optimizer.step()
+                print('generator_optimizer.step')
 
                 if self.train_logger:
                     self.train_logger.log_info(batch, generated, self._batch_num_total)
@@ -191,7 +193,7 @@ class GanTrainer(TrainerBase):
 
             else:
                 discriminator_quota = self.max_batches
-                generator_quota = self.max_batches * 2
+                generator_quota = self.max_batches
 
                 discriminator_metrics = self.discriminator.get_metrics(reset=False)
                 generator_metrics = self.generator.get_metrics(reset=False)
@@ -203,6 +205,11 @@ class GanTrainer(TrainerBase):
                     **add_prefix(discriminator_metrics, 'batch_discriminator'),
                     **add_prefix(generator_metrics, 'batch_generator'),
                 }
+
+                if generator_loss > discriminator_fake_loss:
+                    generator_quota *= max(generator_loss / discriminator_fake_loss, 10)
+                else:
+                    discriminator_quota *= max(discriminator_fake_loss / generator_loss, 10)
 
                 generator_loss = 0.0
                 discriminator_real_loss = 0.0
