@@ -41,7 +41,7 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
         namespace='target'
     )
 
-    on_disk = True
+    on_disk = False
 
     token_fasttext_embedding: TokenEmbedder = load_fasttext(
         model_path=token_fasttext_path,
