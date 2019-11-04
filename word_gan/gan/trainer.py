@@ -205,9 +205,9 @@ class GanTrainer(TrainerBase):
                 }
 
                 if generator_loss > discriminator_fake_loss:
-                    generator_quota *= max(generator_loss / discriminator_fake_loss, 10)
+                    generator_quota *= min(generator_loss / discriminator_fake_loss, 10)
                 else:
-                    discriminator_quota *= max(discriminator_fake_loss / generator_loss, 10)
+                    discriminator_quota *= min(discriminator_fake_loss / generator_loss, 10)
 
                 generator_loss = 0.0
                 discriminator_real_loss = 0.0
