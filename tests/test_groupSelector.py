@@ -5,7 +5,7 @@ import torch
 from allennlp.data import Vocabulary
 from loguru import logger
 
-from word_gan.gan.candidate_selectors.group_selector import GroupSelector
+from word_gan.gan.candidate_selectors.group_selector import ColumnGroupSelector
 from word_gan.gan.helpers.loaders import load_w2v
 from word_gan.settings import VerbsSettings
 
@@ -26,7 +26,7 @@ class TestGroupSelector(TestCase):
 
         logger.info("w2v loaded")
 
-        selector = GroupSelector(
+        selector = ColumnGroupSelector(
             vocab=vocab,
             target_w2v=w2v,
             groups_file=os.path.join(VerbsSettings.DATA_DIR, 'verbs.txt')

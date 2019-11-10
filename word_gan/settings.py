@@ -15,6 +15,8 @@ class BaseSettings:
     CANDIDATE_GROUPS_FILE = None
     GENERATOR_CONTEXT = 1
     MAX_CONTEXT_SIZE = 2
+    NUM_VARIANTS = 15
+    CANDIDATES_PATH = os.path.join(DATA_DIR, 'candidates.json')
 
 
 class TestSettings(BaseSettings):
@@ -37,6 +39,7 @@ class VerbsSettings(BaseSettings):
     DATA_DIR = os.path.join(ROOT_DIR, 'data', 'verbs')
     VOCAB_PATH = os.path.join(DATA_DIR, 'vocab')
     CANDIDATE_GROUPS_FILE = os.path.join(DATA_DIR, 'verbs.txt')
+    CANDIDATES_PATH = os.path.join(DATA_DIR, 'candidates.json')
 
 
 mode = os.getenv('MODE', 'verbs')

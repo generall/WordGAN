@@ -14,7 +14,8 @@ from allennlp.training import util as training_util
 from allennlp.training.checkpointer import Checkpointer
 from torch import optim
 
-from word_gan.gan.candidate_selectors.group_selector import GroupSelector
+from word_gan.gan.candidate_selectors.group_selector import ColumnGroupSelector
+from word_gan.gan.candidate_selectors.json_group_selector import JsonGroupSelector
 from word_gan.gan.dataset import TextDatasetReader
 from word_gan.gan.discriminator import Discriminator
 from word_gan.gan.fasttext_indexer import StaticFasttextTokenIndexer
@@ -65,10 +66,10 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
         allow_unmatched_keys=True
     )
 
-    candidates_selector = GroupSelector(
+    candidates_selector = JsonGroupSelector(
         vocab=vocab,
         target_w2v=target_w2v_embedding,
-        groups_file=SETTINGS.CANDIDATE_GROUPS_FILE,
+        groups_file=SETTINGS.CANDIDATES_PATH,
         device=device
     )
 

@@ -18,7 +18,7 @@ def convert_verbs(path, out_path):
 
         all_words = set()
 
-        for column in df.columns:
+        for column in df.columns[:1]:
             for word in df[column]:
                 all_words.add(word)
 

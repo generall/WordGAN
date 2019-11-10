@@ -9,7 +9,7 @@ from allennlp.modules import Embedding
 from word_gan.gan.candidate_selectors.base_selector import CandidatesSelector
 
 
-class GroupSelector(CandidatesSelector):
+class ColumnGroupSelector(CandidatesSelector):
     """
     Here we save a multiple groups of candidates, if some word is present is some group
     all other group members are candidates for prediction
@@ -19,7 +19,7 @@ class GroupSelector(CandidatesSelector):
         self.target_w2v = target_w2v
         self.vocab = vocab
 
-        self.groups = self.load_columns(groups_file, device or self.target_w2v.weight.device)
+        self.groups = self.load_mapping(groups_file, device or self.target_w2v.weight.device)
 
         # Mapping target_id -> candidate_ids
         # Shape: [target_size, groups_size]
@@ -57,7 +57,7 @@ class GroupSelector(CandidatesSelector):
 
         return target_tensor, mask
 
-    def load_columns(self, file, device):
+    def load_mapping(self, file, device):
         df = pd.read_csv(file, sep='\t')
 
         padding_token = self.vocab._padding_token
@@ -71,12 +71,12 @@ class GroupSelector(CandidatesSelector):
         for column in df.columns:
             group = list(df[column])
 
-            token_tensor, target_tensor = self.words_to_tensor(group, device=device, padding_token=padding_token)
+            target_tensor, mask_tensor = self.words_to_tensor(group, device=device, padding_token=padding_token)
 
             for word in df[column]:
                 word_idx = self.vocab.get_token_index(word, namespace='target')
                 if word_idx not in groups:
-                    groups[word_idx] = token_tensor, target_tensor
+                    groups[word_idx] = target_tensor, mask_tensor
 
         return groups
 
