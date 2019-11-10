@@ -68,7 +68,7 @@ class ColumnGroupSelector(CandidatesSelector):
 
         groups = defaultdict(lambda: (default_idxs, default_mask))
 
-        for column in df.columns:
+        for column in df.columns[:1]:
             group = list(df[column])
 
             target_tensor, mask_tensor = self.words_to_tensor(group, device=device, padding_token=padding_token)

@@ -66,10 +66,10 @@ def get_model(vocab, device) -> Tuple[Generator, Discriminator]:
         allow_unmatched_keys=True
     )
 
-    candidates_selector = JsonGroupSelector(
+    candidates_selector = ColumnGroupSelector(
         vocab=vocab,
         target_w2v=target_w2v_embedding,
-        groups_file=SETTINGS.CANDIDATES_PATH,
+        groups_file=SETTINGS.CANDIDATE_GROUPS_FILE,
         device=device
     )
 
@@ -177,7 +177,7 @@ def launch_train(text_data_path):
         discriminator_checkpointer=discriminator_checkpointer,
         batch_iterator=iterator,
         cuda_device=cuda_device,
-        max_batches=1000,
+        max_batches=2000,
         num_epochs=int(os.getenv("EPOCHS", 2)),
         train_logger=logger
     )
