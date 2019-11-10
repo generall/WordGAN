@@ -177,7 +177,7 @@ def launch_train(text_data_path):
         discriminator_checkpointer=discriminator_checkpointer,
         batch_iterator=iterator,
         cuda_device=cuda_device,
-        max_batches=50,
+        max_batches=1000,
         num_epochs=int(os.getenv("EPOCHS", 2)),
         train_logger=logger
     )

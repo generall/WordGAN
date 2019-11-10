@@ -19,7 +19,7 @@ class SynonymGenerator(nn.Module):
         self.encoder = MultilayerCnnEncoder(
             embedding_dim=self.embedding_dim,
             num_filters=self.embedding_dim,
-            layers=2,
+            layers=1,
             conv_layer_activation=Activation.by_name('tanh')(),
             ngram_filter_sizes=(3, ),
             output_dim=self.embedding_dim,

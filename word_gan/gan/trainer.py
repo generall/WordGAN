@@ -203,11 +203,11 @@ class GanTrainer(TrainerBase):
                     **add_prefix(discriminator_metrics, 'batch_discriminator'),
                     **add_prefix(generator_metrics, 'batch_generator'),
                 }
-
-                if generator_loss > discriminator_fake_loss:
-                    generator_quota *= min(generator_loss / discriminator_fake_loss, 10)
-                else:
-                    discriminator_quota *= min(discriminator_fake_loss / generator_loss, 10)
+                #
+                # if generator_loss > discriminator_fake_loss:
+                #     generator_quota *= min(generator_loss / discriminator_fake_loss, 10)
+                # else:
+                #     discriminator_quota *= min(discriminator_fake_loss / generator_loss, 10)
 
                 generator_loss = 0.0
                 discriminator_real_loss = 0.0

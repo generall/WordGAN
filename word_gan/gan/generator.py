@@ -10,7 +10,6 @@ from torch import nn
 from torch.nn import Linear
 
 from word_gan.gan.candidate_selectors.base_selector import CandidatesSelector
-from word_gan.gan.discriminator import Discriminator
 from word_gan.model.selection_generator import SelectionGenerator
 from word_gan.model.synonym_discriminator import SynonymDiscriminator
 
