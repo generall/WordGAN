@@ -2,7 +2,7 @@ gensim==3.8.0
 allennlp==0.9.0
 nltk
 loguru
-torch==1.2.0
+torch==2.2.0
 pandas
 numpy
 overrides==2.2.0
